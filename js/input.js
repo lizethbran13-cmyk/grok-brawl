@@ -49,7 +49,7 @@
     knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     var nx = dx / R, ny = -dy / R;
     var wasL = touch.left, wasR = touch.right;
-    touch.left = nx < -0.38; touch.right = nx > 0.38; touch.up = ny > 0.6; touch.down = ny < -0.62;
+    touch.left = nx < -0.38; touch.right = nx > 0.38; touch.up = ny > 0.55; touch.down = ny < -0.62;
     // double flick -> dash
     var dir = touch.right ? 1 : touch.left ? -1 : 0;
     if (dir && !(dir > 0 ? wasR : wasL)) {

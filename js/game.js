@@ -108,6 +108,13 @@
     r.root.visible = !f.hidden;
     var spin = f.state === 'atk' && f.move && f.move.def.spin && f.move.t > 3 && !f.move.landed;
     r.body.rotation.y = spin ? r.body.rotation.y + 0.55 : 0;
+    // double jump = front flip around the hips, triple jump = a full twirl
+    var fl = f.state === 'air' && f.jumpN >= 2 && f.jumpT < 22 ? f.jumpT / 22 : -1;
+    if (fl >= 0) {
+      var e = 1 - Math.pow(1 - fl, 2.2), cy = 1.05 * f.sc;
+      if (f.jumpN === 2) { var th = e * Math.PI * 2; r.body.rotation.x = th; r.body.position.set(0, cy * (1 - Math.cos(th)), -cy * Math.sin(th)); }
+      else { r.body.rotation.x = 0; r.body.position.set(0, 0, 0); r.body.rotation.y = e * Math.PI * 2; }
+    } else if (r.body.rotation.x !== 0 || r.body.position.y !== 0 || r.body.position.z !== 0) { r.body.rotation.x = 0; r.body.position.set(0, 0, 0); }
     r.setFlash(f.flash > 0 ? 0.42 : f.frozen > 0 ? 0.35 : 0);
     if (r.shadow) { r.shadow.position.y = -f.y + 0.03; var s = Math.max(0.4, 1 - f.y * 0.18); r.shadow.scale.set(s, s, 1); }
     if (applyPose) { var ps = C.poseOf(f, time); Mdl.applyPose(r, ps.p, ps.k); }
@@ -264,6 +271,11 @@
       case 'block': FX.blockSpark(d.x, d.y); sfx('block'); shake = Math.max(shake, 0.05); break;
       case 'whoosh': sfx('whoosh'); break;
       case 'jump': sfx('jump'); FX.dust(d.f.x, 5); break;
+      case 'airjump':
+        sfx('jump', 0.8 + d.n * 0.15);
+        FX.ring(d.f.x, d.f.y + 0.1, 0, d.n >= 3 ? '#ffe14d' : '#ffffff', 1.6, 0.28, true);
+        FX.burst(d.f.x, d.f.y + 0.15, d.n >= 3 ? '#ffe14d' : '#e8e4ff', 12, 3.5, 0.32, 0.35);
+        break;
       case 'land': FX.dust(d.f.x, 4); sfx('land'); break;
       case 'fall': FX.dust(d.f.x, 10); sfx('land'); shake = Math.max(shake, 0.12); break;
       case 'dash': sfx('dash'); FX.dust(d.f.x, 6); break;
@@ -310,9 +322,9 @@
       var a = Math.sin(time * 0.25) * 0.35; tx = Math.sin(a) * 10; tz = Math.cos(a) * 10; ty = 2.6; lx = 0; ly = 1.4; k = 1 - Math.pow(0.05, dt);
     } else if (world && match) {
       var a0 = F[0], a1 = F[1], mid = (a0.x + a1.x) / 2, sep = Math.abs(a0.x - a1.x), maxY = Math.max(a0.y, a1.y);
-      var width = Math.max(8.2, sep + 5.0), height = 5.1 + maxY * 0.5;
+      var width = Math.max(8.2, sep + 5.0), height = 5.1 + maxY * 0.95;
       var D = Math.max(width / 2 / tanH, height / 2 / tanV); D = Math.min(D, 17);
-      tx = mid; ly = 1.3 + maxY * 0.35; ty = ly + 0.55 + D * 0.06; tz = D; lx = mid;
+      tx = mid; ly = 1.3 + maxY * 0.55; ty = ly + 0.55 + D * 0.06; tz = D; lx = mid;
       if (match.phase === 'intro' && match.t < 90) { var p = match.t / 90, e = 1 - Math.pow(1 - p, 3); tx = mid + (1 - e) * -5; tz = D + (1 - e) * -4; ty = ty + (1 - e) * 1.5; k = 1 - Math.pow(0.02, dt); }
       if (world.cine) { var f = world.cine.f; tx = f.x + f.facing * 2.4; ty = f.y + 1.9; tz = 3.6; lx = f.x; ly = f.y + 1.55; k = 1 - Math.pow(0.0005, dt); }
       else if (world.superCamT > 0) { var o = Math.sin(time * 0.9) * 0.5; tx = mid + Math.sin(o) * 5.2; tz = Math.cos(o) * 5.2; ty = 1.9; lx = mid; ly = 1.3; k = 1 - Math.pow(0.01, dt); }
@@ -497,7 +509,7 @@
     meter: function (side, v) { if (F[side]) F[side].meter = v; },
     hp: function (side, v) { if (F[side]) F[side].hp = v; },
     pos: function (side, x) { if (F[side]) { F[side].x = x; F[side].y = 0; F[side].vy = 0; } },
-    fighters: function () { return F; }, world: function () { return world; },
+    fighters: function () { return F; }, world: function () { return world; }, camera: function () { return camera; },
     skipIntro: function () { if (match && match.phase === 'intro') { match.phase = 'fight'; match.t = 0; world.inputLocked = false; F[0].state = F[1].state = 'idle'; } },
     identity: function () { return [0, 1].map(function (i) { var bar = document.querySelector('.hbar.p' + (i + 1)); return { fighter: F[i] && F[i].id, rig: rigs[i] && rigs[i].root.userData.fighterId, plate: plates[i] ? plates[i].userData.fighterId : null, plateLabel: plates[i] ? plates[i].userData.label : null, hudName: bar.querySelector('.nm').textContent, hudId: bar.getAttribute('data-id'), defName: F[i] && F[i].def.name }; }); },
     renderOnce: function () { updateCamera(0.016); updateVis(0.016); FX.update(0.016, camera, cam.x); renderer.render(scene, camera); }

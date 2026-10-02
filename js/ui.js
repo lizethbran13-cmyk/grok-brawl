@@ -166,7 +166,7 @@
     setTimeout(function () {
       G.start(cfg); G.hudInit(portraits);
       document.querySelectorAll('#trainBar [data-dm]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-dm') === 'stand'); });
-      $('tMeter').classList.add('on'); $('tInfo').textContent = '';
+      $('tMeter').classList.add('on'); $('tInfo').textContent = cfg.mode === 'training' ? 'TIP: tap JUMP up to 3 times for a TRIPLE JUMP' : '';
       show('fight'); A.music(GB.arena(cfg.arena).music);
       $('fade').classList.remove('on');
     }, 250);
@@ -214,7 +214,8 @@
       '<tr><td>PUNCH CHAIN</td><td>Tap Punch up to 3 times. The 3rd hit is an uppercut launcher.</td></tr>' +
       '<tr><td>KICK CHAIN</td><td>Tap Kick up to 3 times. The 3rd kick knocks them flying. Mix punches and kicks too!</td></tr>' +
       '<tr><td>CANCEL</td><td>Hit with a punch or kick, then press Special to cancel into it.</td></tr>' +
-      '<tr><td>AIR ATTACK</td><td>Punch or Kick while jumping.</td></tr>' +
+      '<tr><td>TRIPLE JUMP</td><td>Press Jump again in the air for a double jump (flip!) and a third time for a triple jump. Jump right over your opponent to hit them from behind!</td></tr>' +
+      '<tr><td>AIR ATTACK</td><td>Punch or Kick while jumping. You get a fresh air attack after every extra jump.</td></tr>' +
       '<tr><td>BLOCK</td><td>Hold Block (or hold down). Blocking too much breaks your guard.</td></tr>' +
       '<tr><td>DASH / DODGE</td><td>Dash forward or back. You are briefly invincible while dashing.</td></tr>' +
       '<tr><td>METER</td><td>Fills when you deal or take damage. 1/3 = Special, full = SUPER.</td></tr></table>';
@@ -225,7 +226,7 @@
       '<tr><td>PAUSE</td><td>' + k('Esc / P') + ' &nbsp; Mute: ' + k('M') + '</td></tr></table>';
     h += '<h3>2 PLAYERS (SAME KEYBOARD)</h3><table><tr><td>PLAYER 1</td><td>' + k('W A S D') + ' move, ' + k('F') + ' punch, ' + k('G') + ' kick, ' + k('H') + ' block, ' + k('R') + ' special, ' + k('T') + ' super, ' + k('Q') + ' dash</td></tr>' +
       '<tr><td>PLAYER 2</td><td>Arrows move, ' + k('J') + ' punch, ' + k('K') + ' kick, ' + k('L') + ' block, ' + k('I') + ' special, ' + k('O') + ' super, ' + k('U') + ' / Right ' + k('Shift') + ' dash</td></tr></table>';
-    h += '<h3>PHONE</h3><table><tr><td>LEFT THUMB</td><td>Joystick: left/right to walk, up to jump, down to block. Flick twice to dash.</td></tr><tr><td>RIGHT THUMB</td><td>PUNCH, KICK, BLOCK, JUMP, DASH, SPECIAL (glows when ready), SUPER (glows gold when full).</td></tr></table>';
+    h += '<h3>PHONE</h3><table><tr><td>LEFT THUMB</td><td>Joystick: left/right to walk, up to jump (flick up again to double / triple jump), down to block. Flick twice to dash.</td></tr><tr><td>RIGHT THUMB</td><td>PUNCH, KICK, BLOCK, JUMP (tap up to 3 times for a triple jump), DASH, SPECIAL (glows when ready), SUPER (glows gold when full).</td></tr></table>';
     return h;
   }
   function openMoves(fromPause) {

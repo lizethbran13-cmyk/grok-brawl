@@ -34,6 +34,7 @@
     var moveDir = function (d) { if (d > 0) c.right = true; else if (d < 0) c.left = true; };
     var myState = f.state, canAct = myState === 'idle' || myState === 'walk' || myState === 'block' || myState === 'land' || myState === 'dash';
     var busy = myState === 'atk';
+    if (myState !== 'air' && f.y <= 0.0001) ai.airJumpId = (ai.airJumpId || 0) + (ai.wasAir ? 1 : 0), ai.wasAir = false; else if (myState === 'air') ai.wasAir = true;
 
     // --- training dummy jump mode is handled outside; here full CPU ---
     // wake-up defense
@@ -59,7 +60,19 @@
 
     // air: maybe air attack when near
     if (myState === 'air') {
-      if (!f.airAtk && dist < 1.7 && Math.abs(v.y - f.y) < 1.6 && rnd(ai) < 0.25 + 0.4 * p.aggr) press(rnd(ai) < 0.6 ? 'kick' : 'punch');
+      // Normal / Hard sometimes chain a double jump (Hard can triple), decided once per jump so it stays fair
+      var maxJ = p.level >= 1.5 ? 3 : p.level >= 0.5 ? 2 : 1;
+      if (ai.airRoll !== f.jumps + ':' + ai.airJumpId) {
+        ai.airRoll = f.jumps + ':' + ai.airJumpId;
+        ai.wantAirJump = f.jumps < maxJ && rnd(ai) < (f.jumps === 1 ? 0.25 + 0.2 * p.level : 0.3 + 0.15 * p.level);
+      }
+      if (ai.wantAirJump && f.jumps < maxJ && f.st >= 6 && f.vy < 2.5) {
+        ai.wantAirJump = false; press('up');
+        // cross over a close opponent, otherwise drift in
+        ai.planDir = dist < 2.4 || rnd(ai) < 0.6 ? 1 : -1;
+        moveDir(toward * ai.planDir); return;
+      }
+      if (!f.airAtk && !(ai.wantAirJump && f.jumps < maxJ) && dist < 1.7 && Math.abs(v.y - f.y) < 1.6 && rnd(ai) < 0.25 + 0.4 * p.aggr) press(rnd(ai) < 0.6 ? 'kick' : 'punch');
       moveDir(toward * (ai.planDir || 0));
       return;
     }

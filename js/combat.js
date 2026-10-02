@@ -3,6 +3,9 @@
   'use strict';
   var C = GB.Combat = {};
   var DT = 1 / 60, GRAV = 38, SPECIAL_COST = 33, SUPER_COST = 100, BUF = 8, ABUF = 13;
+  // movement tuning (v1.1 movement patch): snappier jump arc, up to 3 jumps, more air control
+  var MAX_JUMPS = 3, AIR_JUMP_MUL = [1, 0.86, 0.74], JUMP_RISE_G = 1.25, JUMP_FALL_G = 1.5, LAND_LAG = 1, AIR_JUMP_MIN = 5;
+  C.MAX_JUMPS = MAX_JUMPS;
   C.DT = DT; C.SPECIAL_COST = SPECIAL_COST; C.SUPER_COST = SUPER_COST;
   var BTN = ['left', 'right', 'up', 'down', 'punch', 'kick', 'block', 'special', 'super', 'dash'];
   C.BTN = BTN;
@@ -30,7 +33,7 @@
     var s = def.stats, sc = def.scale || 1;
     var f = {
       def: def, id: def.id, side: side, sc: sc,
-      walk: 2.7 + 0.42 * s.speed, dashV: 11 + 1.2 * s.speed, airV: 3.2 + 0.35 * s.speed, jumpV: 13.7 - 0.2 * s.weight,
+      walk: 3.05 + 0.48 * s.speed, dashV: 12 + 1.3 * s.speed, airV: 4.1 + 0.45 * s.speed, jumpV: (13.7 - 0.2 * s.weight) * 1.12,
       dmgMul: 0.82 + 0.08 * s.power, kbMul: 1.25 - 0.1 * s.weight,
       maxHp: Math.round((900 + 40 * s.weight) * (opts.hpMul || 1)),
       ctl: {}, pc: {}, buf: {}, bufN: { punch: 0, kick: 0 }, ai: null
@@ -44,16 +47,17 @@
     f.x = side === 0 ? -2.6 : 2.6; f.y = 0; f.vx = 0; f.vy = 0; f.facing = side === 0 ? 1 : -1;
     f.hp = f.maxHp; f.meter = f.meter || 0; f.guard = 100; f.state = 'idle'; f.st = 0; f.stun = 0; f.move = null; f.chain = 0;
     f.invuln = 0; f.combo = 0; f.dashCd = 0; f.airAtk = false; f.hidden = false; f.grav = 1; f.flash = 0; f.ko = false; f.frozen = 0;
+    f.jumps = 0; f.jumpT = 99; f.jumpN = 0;
     f.lastHitBy = null; f.stats = f.stats || { hits: 0, blocks: 0, specials: 0, supers: 0, maxCombo: 0, dmg: 0 };
     for (var k in f.buf) f.buf[k] = 0; f.bufN.punch = f.bufN.kick = 0;
   };
 
   function dirOf(f) { return (f.ctl.right ? 1 : 0) - (f.ctl.left ? 1 : 0); }
   function grounded(f) { return f.y <= 0.0001 && f.vy <= 0; }
-  function neutral(f) { return f.state === 'idle' || f.state === 'walk' || f.state === 'block' || (f.state === 'land' && f.st >= 3); }
+  function neutral(f) { return f.state === 'idle' || f.state === 'walk' || f.state === 'block' || (f.state === 'land' && f.st >= LAND_LAG); }
   C.isAttacking = function (f) { return f.state === 'atk' && f.move && f.move.def.kind !== 'super-lock'; };
   C.inRecovery = function (f) {
-    if (f.state !== 'atk' || !f.move) return f.state === 'land' && f.st < 3;
+    if (f.state !== 'atk' || !f.move) return f.state === 'land' && f.st < LAND_LAG;
     return C.attackPhase(f) === 'recovery';
   };
   C.attackPhase = function (f) {
@@ -288,6 +292,7 @@
     var wantsSuper = f.buf.super > 0 || f.buf.pk > 0;
     if (!inAir && wantsSuper && f.meter >= SUPER_COST) { consume(f, 'super'); consume(f, 'pk'); consume(f, 'punch'); consume(f, 'kick'); startSuper(f, w); return true; }
     if (!inAir && f.buf.special > 0 && f.meter >= SPECIAL_COST) { consume(f, 'special'); startSpecial(f, w); return true; }
+    if (inAir && (f.buf.punch > 0 || f.buf.kick > 0) && !f.airAtk && Math.abs(opp.x - f.x) > 0.05) f.facing = Math.sign(opp.x - f.x);
     if (f.buf.punch > 0) { consume(f, 'punch'); if (inAir) { if (!f.airAtk) { f.airAtk = true; startMove(f, normalMove('ap'), w); return true; } } else { startNormal(f, 'p1', w); return true; } }
     if (f.buf.kick > 0) { consume(f, 'kick'); if (inAir) { if (!f.airAtk) { f.airAtk = true; startMove(f, normalMove('ak'), w); return true; } } else { startNormal(f, 'k1', w); return true; } }
     return false;
@@ -299,12 +304,13 @@
     if (f.dashCd > 0) f.dashCd--;
     if (f.flash > 0) f.flash--;
     if (f.frozen > 0) f.frozen--;
+    if (f.jumpT < 99) f.jumpT++;
     if (f.state !== 'block' && f.state !== 'bstun') f.guard = Math.min(100, f.guard + 0.35);
     var inv = 0;
 
     switch (f.state) {
       case 'idle': case 'walk': case 'block': case 'land':
-        if (f.state === 'land' && f.st < 3) { f.vx *= 0.6; break; }
+        if (f.state === 'land' && f.st < LAND_LAG) { f.vx *= 0.75; break; }
         f.combo = 0; f.chain = 0;
         if (Math.abs(opp.x - f.x) > 0.05 && !w.noAutoFace) f.facing = Math.sign(opp.x - f.x);
         if (tryActions(f, opp, w, false)) break;
@@ -312,7 +318,7 @@
           consume(f, 'dash'); var dd = dir || f.facing; f.state = 'dash'; f.st = 0; f.dashDir = dd; f.dashCd = 26; w.emit('dash', { f: f }); break;
         }
         if (f.buf.jump > 0) {
-          consume(f, 'jump'); f.state = 'air'; f.st = 0; f.vy = f.jumpV; f.y = 0.001; f.vx = dir * f.airV; f.airAtk = false; w.emit('jump', { f: f }); break;
+          consume(f, 'jump'); f.state = 'air'; f.st = 0; f.vy = f.jumpV; f.y = 0.001; f.vx = dir * f.airV; f.airAtk = false; f.jumps = 1; f.jumpN = 1; f.jumpT = 99; w.emit('jump', { f: f }); break;
         }
         if (c.block || c.down) { f.state = 'block'; f.vx = 0; break; }
         if (dir) { f.state = 'walk'; f.vx = dir * f.walk * (dir === f.facing ? 1 : 0.78); }
@@ -326,7 +332,16 @@
         if (f.st >= 16) { f.state = 'idle'; f.st = 0; }
         break;
       case 'air':
-        f.vx += (dir * f.airV - f.vx) * 0.04;
+        // responsive air control; with no input the jump keeps most of its momentum
+        f.vx += (dir * f.airV - f.vx) * (dir ? 0.13 : 0.02);
+        // double / triple jump: each extra jump is a little weaker
+        if (f.buf.jump > 0 && f.jumps < MAX_JUMPS && f.st >= AIR_JUMP_MIN) {
+          consume(f, 'jump');
+          f.vy = f.jumpV * AIR_JUMP_MUL[f.jumps]; f.jumps++; f.jumpN = f.jumps; f.jumpT = 0; f.st = 0; f.airAtk = false;
+          if (dir) f.vx = dir * f.airV * 1.05;
+          w.emit('airjump', { f: f, n: f.jumps });
+          break;
+        }
         if (f.buf.punch > 0 || f.buf.kick > 0) tryActions(f, opp, w, true);
         break;
       case 'atk':
@@ -383,20 +398,22 @@
     if (f.state === 'locked') return;
     var air = f.y > 0 || f.vy > 0;
     if (air) {
-      f.vy -= GRAV * f.grav * DT * (f.state === 'launched' ? 0.92 : 1);
+      var jg = f.state === 'air' || (f.state === 'atk' && f.move && f.move.def.air) ? (f.vy > 0 ? JUMP_RISE_G : JUMP_FALL_G) : 1;
+      f.vy -= GRAV * f.grav * DT * (f.state === 'launched' ? 0.92 : 1) * jg;
       f.y += f.vy * DT; f.x += f.vx * DT;
       if (f.y <= 0) {
-        f.y = 0; var impact = f.vy; f.vy = 0;
+        f.y = 0; var impact = f.vy; f.vy = 0; f.jumps = 0;
         if (f.state === 'atk' && f.move && f.move.def.onLand) f.move.def.onLand(f, w, f.move, opp);
         else if (f.state === 'atk' && f.move && f.move.def.air) { f.move = null; f.state = 'land'; f.st = 0; }
         else if (f.state === 'atk' && f.move && !f.move.def.airborne) { /* grounded move landing */ }
-        else if (f.state === 'air') { f.state = 'land'; f.st = 0; w.emit('land', { f: f }); }
+        else if (f.state === 'air') { f.state = 'land'; f.st = 0; f.jumps = 0; w.emit('land', { f: f }); }
         else if (f.state === 'launched') { f.state = f.ko ? 'ko' : 'down'; f.st = 0; f.vx *= 0.4; w.emit('fall', { f: f, impact: impact }); }
         else if (f.state === 'hit' || f.state === 'dizzy') { /* stay */ }
       }
     } else {
       f.x += f.vx * DT;
       if (f.state === 'launched') { f.state = f.ko ? 'ko' : 'down'; f.st = 0; }
+      f.jumps = 0;
     }
     var lim = w.half - 0.1;
     if (f.x < -lim) { f.x = -lim; if (f.vx < 0) f.vx = 0; }
@@ -406,6 +423,8 @@
   function separate(a, b, w) {
     if (a.hidden || b.hidden || a.state === 'down' || b.state === 'down' || a.state === 'ko' || b.state === 'ko' || a.state === 'locked' || b.state === 'locked') return;
     if (Math.abs(a.y - b.y) > 1.5) return;
+    // airborne fighters pass over each other instead of bumping (easy cross-ups)
+    if ((a.y > 0.3 && airborneMove(a)) || (b.y > 0.3 && airborneMove(b))) return;
     var minSep = 0.52 * (a.sc + b.sc), dx = b.x - a.x, ad = Math.abs(dx);
     if (ad >= minSep) return;
     var s = dx === 0 ? (a.facing || 1) : Math.sign(dx), ov = minSep - ad, lim = w.half - 0.1;
@@ -414,6 +433,8 @@
     a.x -= s * ov * ka; b.x += s * ov * kb;
     a.x = Math.max(-lim, Math.min(lim, a.x)); b.x = Math.max(-lim, Math.min(lim, b.x));
   }
+
+  function airborneMove(f) { return f.state === 'air' || (f.state === 'atk' && f.move && f.move.def.air) || f.state === 'dash'; }
 
   function stepProjectiles(w) {
     var dead = [];
