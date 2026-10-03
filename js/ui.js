@@ -172,8 +172,10 @@
     }, 250);
   }
   UI.launch = launch;
+  UI.show = function (n) { show(n); }; UI.startDemo = function () { startDemo(); };
   G.onMatchEnd = function (res, m) {
     var cfg = m.cfg, win = res.winner, wd = GB.fighter(win === 0 ? cfg.p1 : cfg.p2), s = GB.save;
+    if (cfg.mode === 'online') { GB.Online.matchEnd(res, m); return; }
     if (cfg.mode !== '2p') {
       s.matches++; if (win === 0) { s.wins++; s.winsByDiff[cfg.diff] = (s.winsByDiff[cfg.diff] || 0) + 1; s.fighterWins[cfg.p1] = (s.fighterWins[cfg.p1] || 0) + 1; } else s.losses++;
     }
@@ -188,7 +190,7 @@
         } else { sub = 'Stage ' + (arcade.idx + 1) + ' cleared!'; btns = [['NEXT FIGHT \u25B6', function () { arcade.idx++; openLadder(); }]]; }
       } else { sub = 'CONTINUE?'; btns = [['RETRY', function () { arcadeFight(); }], ['QUIT', toMenuFade]]; }
     } else {
-      sub = cfg.mode === '2p' ? (win === 0 ? 'Player 1 takes it!' : 'Player 2 takes it!') : (win === 0 ? 'You win!' : 'The CPU wins this time');
+      sub = cfg.mode === 'online' ? (((cfg.names && cfg.names[win]) || 'P' + (win + 1)) + ' takes it!') : cfg.mode === '2p' ? (win === 0 ? 'Player 1 takes it!' : 'Player 2 takes it!') : (win === 0 ? 'You win!' : 'The CPU wins this time');
       btns = [['REMATCH', function () { var c = {}; for (var k in cfg) c[k] = cfg[k]; delete c.seed; launch(c); }], ['CHANGE FIGHTERS', function () { openSelect(cfg.mode); }], ['MENU', toMenuFade]];
     }
     GB.persist();
@@ -204,7 +206,7 @@
   function toMenuFade() { $('fade').classList.add('on'); setTimeout(function () { G.quit(); toMenu(); $('fade').classList.remove('on'); }, 250); }
 
   /* ---------- pause / moves ---------- */
-  function pause() { var m = G.match(); if (!m || m.mode === 'demo' || screen !== 'fight') return; G.pause(true); show('pause'); A.play('select'); refreshMenu(); }
+  function pause() { var m = G.match(); if (!m || m.mode === 'demo' || m.online || screen !== 'fight') return; G.pause(true); show('pause'); A.play('select'); refreshMenu(); }
   function resume() { G.pause(false); show('fight'); }
   function movesHtml(def) {
     var k = function (s) { return s.split('/').map(function (x) { return '<kbd>' + x.trim() + '</kbd>'; }).join(' '); };
@@ -242,8 +244,8 @@
     G.init($('c'), isTouch);
     I.initTouch();
     try { portraits = G.portraits(); } catch (e) { portraits = {}; }
-    startDemo();
-    show('title');
+    if (GB.Online && GB.Online.active) { GB.Online.boot(); }
+    else { startDemo(); show('title'); }
     $('titleHelp').textContent = isTouch ? 'Hold your phone sideways \u00b7 joystick on the left, buttons on the right' : 'Keyboard: A/D move \u00b7 W jump \u00b7 J punch \u00b7 K kick \u00b7 L block \u00b7 I special \u00b7 Shift dash \u00b7 O super';
     var start = function () { if (screen !== 'title') return; A.unlock(); A.play('confirm'); toMenu(); };
     $('startBtn').addEventListener('click', start);

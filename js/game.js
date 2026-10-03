@@ -94,11 +94,13 @@
     var t = new T.CanvasTexture(c); var s = new T.Sprite(new T.SpriteMaterial({ map: t, depthTest: false, depthWrite: false, transparent: true })); s.scale.set(1.45, 0.36, 1); s.renderOrder = 20; s.material.opacity = 0.9; return s;
   }
   function setRigs(defs, tags) {
-    for (var i = 0; i < 2; i++) {
+    for (var i = 0; i < Math.max(defs.length, rigs.length); i++) {
       disposeRig(rigs[i]); if (plates[i]) { scene.remove(plates[i]); plates[i].material.map.dispose(); plates[i].material.dispose(); plates[i] = null; }
+      if (i >= defs.length) { rigs[i] = null; continue; }
       rigs[i] = Mdl.build(defs[i]); rigs[i].root.userData.fighterId = defs[i].id; scene.add(rigs[i].root);
-      if (tags) { plates[i] = plate(defs[i], tags[i], i === 0 ? '#ff6a4a' : '#3ff0ff'); plates[i].userData.fighterId = defs[i].id; plates[i].userData.label = tags[i] + ' ' + defs[i].name; scene.add(plates[i]); }
+      if (tags) { plates[i] = plate(defs[i], tags[i], ['#ff6a4a', '#3ff0ff', '#7dff6a'][i]); plates[i].userData.fighterId = defs[i].id; plates[i].userData.label = tags[i] + ' ' + defs[i].name; scene.add(plates[i]); }
     }
+    rigs.length = defs.length; plates.length = defs.length;
   }
   function faceAngle(f) { return f.facing > 0 ? Math.PI / 2 - 0.42 : -(Math.PI / 2 - 0.42); }
   function syncRig(i, applyPose) {
@@ -118,7 +120,7 @@
     r.setFlash(f.flash > 0 ? 0.42 : f.frozen > 0 ? 0.35 : 0);
     if (r.shadow) { r.shadow.position.y = -f.y + 0.03; var s = Math.max(0.4, 1 - f.y * 0.18); r.shadow.scale.set(s, s, 1); }
     if (applyPose) { var ps = C.poseOf(f, time); Mdl.applyPose(r, ps.p, ps.k); }
-    if (plates[i]) { var o = F[1 - i], close = o && Math.abs(o.x - f.x) < 1.9 && i === 1 ? 0.38 : 0; plates[i].position.set(f.x, f.y + r.height + 0.3 + close, 0); plates[i].visible = !f.hidden && f.state !== 'down' && f.state !== 'ko' && !(world && world.cine); }
+    if (plates[i]) { var o = F[1 - i], close = o && Math.abs(o.x - f.x) < 1.9 && i === 1 ? 0.38 : 0; if (F.length > 2) { close = 0; for (var q = 0; q < i; q++) if (Math.abs(F[q].x - f.x) < 1.9) close += 0.38; } plates[i].position.set(f.x, f.y + r.height + 0.3 + close, 0); plates[i].visible = !f.hidden && f.state !== 'down' && f.state !== 'ko' && !(world && world.cine); }
   }
 
   /* ---------- arena ---------- */
@@ -137,30 +139,34 @@
     // cfg: {mode:'arcade'|'versus'|'training'|'2p'|'demo', p1, p2, arena, diff, boss, ladderIdx}
     preview = null; view = 'fight'; paused = false; slowT = 0; acc = 0;
     FX.clear(); G.loadArena(cfg.arena);
-    var d0 = GB.fighter(cfg.p1), d1 = GB.fighter(cfg.p2);
+    var d0 = GB.fighter(cfg.p1), d1 = GB.fighter(cfg.p2), d2 = cfg.p3 ? GB.fighter(cfg.p3) : null;
+    F.length = 2;
     F[0] = C.makeFighter(d0, 0); F[1] = C.makeFighter(d1, 1, { hpMul: cfg.boss ? 1.15 : 1 });
     F[0].meter = 0; F[1].meter = 0;
+    if (d2) { F[2] = C.makeFighter(d2, 2); F[2].meter = 0; F.forEach(function (f) { f.ffa = true; }); }
     var training = cfg.mode === 'training' ? { dummy: 'stand', meter: true } : null;
     world = C.makeWorld(F[0], F[1], { half: GB.Arenas.HALF, training: training });
+    if (d2) world.f = F.slice();
     world.listeners.push(onEvent);
-    var tags = cfg.mode === 'demo' ? null : ['P1', cfg.mode === '2p' ? 'P2' : cfg.mode === 'training' ? 'DUMMY' : 'CPU'];
-    setRigs([d0, d1], tags);
+    var tags = cfg.mode === 'demo' ? null : cfg.names ? cfg.names.slice(0, F.length) : ['P1', cfg.mode === '2p' ? 'P2' : cfg.mode === 'training' ? 'DUMMY' : 'CPU'];
+    setRigs(d2 ? [d0, d1, d2] : [d0, d1], tags);
+    document.body.classList.toggle('ffa', !!d2);
     ais = [null, null];
     if (cfg.mode === 'demo') { ais[0] = GB.AI.create(F[0], GB.diffParams('normal'), 7 + (Math.random() * 1e6 | 0)); ais[1] = GB.AI.create(F[1], GB.diffParams('normal'), 99 + (Math.random() * 1e6 | 0)); }
-    else if (cfg.mode !== '2p' && cfg.mode !== 'training') ais[1] = GB.AI.create(F[1], GB.diffParams(cfg.diff || 'normal', cfg.boss ? 0.6 : 0), cfg.seed || (1 + (Math.random() * 1e6 | 0)));
+    else if (cfg.mode !== '2p' && cfg.mode !== 'training' && cfg.mode !== 'online') ais[1] = GB.AI.create(F[1], GB.diffParams(cfg.diff || 'normal', cfg.boss ? 0.6 : 0), cfg.seed || (1 + (Math.random() * 1e6 | 0)));
     GB.Input.twoPlayer = cfg.mode === '2p';
-    match = { cfg: cfg, mode: cfg.mode, round: 1, wins: [0, 0], phase: 'intro', t: 0, timer: 60, timerF: 0, training: training, ended: false, bot: null, comboDmg: 0, lastCombo: 0, result: null, roundsLog: [] };
+    match = { cfg: cfg, mode: cfg.mode, online: cfg.mode === 'online', round: 1, wins: d2 ? [0, 0, 0] : [0, 0], ffa: !!d2, koOrder: [], phase: 'intro', t: 0, timer: 60, timerF: 0, training: training, ended: false, bot: null, comboDmg: 0, lastCombo: 0, result: null, roundsLog: [] };
     hudCache = {};
-    for (var i = 0; i < 2; i++) { syncRig(i, true); }
+    for (var i = 0; i < F.length; i++) { syncRig(i, true); }
     cam.x = 0; cam.y = 3; cam.z = 8;
     G.hudInit();
     beginRound();
     return match;
   };
   function beginRound() {
-    var m = match; m.phase = 'intro'; m.t = 0; m.timer = 60; m.timerF = 0;
-    C.resetFighter(F[0], 0); C.resetFighter(F[1], 1); C.resetWorld(world); world.inputLocked = true;
-    F[0].state = F[1].state = 'intro';
+    var m = match; m.phase = 'intro'; m.t = 0; m.timer = m.cfg.time || 60; m.timerF = 0;
+    C.resetFighter(F[0], 0); C.resetFighter(F[1], 1); if (F[2]) C.resetFighter(F[2], 2); C.resetWorld(world); world.inputLocked = true;
+    F[0].state = F[1].state = 'intro'; if (F[2]) F[2].state = 'intro'; m.koOrder = [];
     if (m.training) { m.phase = 'fight'; F[0].state = F[1].state = 'idle'; world.inputLocked = false; F[0].meter = 100; }
     if (G.onRoundStart) G.onRoundStart(m);
   }
@@ -181,8 +187,10 @@
 
   function fixedStep() {
     var m = match; if (!m) return;
+    // online lockstep: both players' inputs for this frame must have arrived, otherwise wait
+    if (m.online && !GB.Online.feed(F, m, world)) return false;
     m.t++;
-    if (m.mode !== 'demo') {
+    if (m.mode !== 'demo' && !m.online) {
       if (m.bot) m.bot(world, F[0], F[1]); else GB.Input.read(F[0].ctl, m.mode === '2p' ? F[1].ctl : null);
       if (m.bot2) m.bot2(world, F[1], F[0]);
     }
@@ -193,30 +201,37 @@
     switch (m.phase) {
       case 'intro':
         world.inputLocked = true; C.step(world);
-        if (m.t === 24) { var final = m.wins[0] === 1 && m.wins[1] === 1; banner(final ? 'FINAL ROUND' : 'ROUND ' + m.round, '#ff4fd8', 1100); sfx('bell'); }
+        if (m.t === 24) { var final = m.ffa ? m.wins.filter(function (x) { return x === 1; }).length >= 2 : m.wins[0] === 1 && m.wins[1] === 1; banner(final ? 'FINAL ROUND' : 'ROUND ' + m.round, '#ff4fd8', 1100); sfx('bell'); }
         if (m.t === 92) { banner('FIGHT!', '#ff4a2e', 650); sfx('fight'); }
-        if (m.t >= 100) { m.phase = 'fight'; m.t = 0; world.inputLocked = false; F[0].state = F[1].state = 'idle'; }
+        if (m.t >= 100) { m.phase = 'fight'; m.t = 0; world.inputLocked = false; F[0].state = F[1].state = 'idle'; if (F[2]) F[2].state = 'idle'; }
         break;
       case 'fight':
         res = C.step(world);
         if (m.training) { trainingTick(); break; }
         if (res === 'run') { m.timerF++; if (m.timerF % 60 === 0) { m.timer--; if (m.timer <= 0) { m.timer = 0; m.phase = 'timeup'; m.t = 0; world.inputLocked = true; banner('TIME!', '#ffe14d', 1200); sfx('bell'); } } }
-        if (F[0].ko || F[1].ko) { m.phase = 'ko'; m.t = 0; world.inputLocked = true; }
+        if (m.ffa ? F.filter(function (f) { return !f.ko; }).length <= 1 : F[0].ko || F[1].ko) { m.phase = 'ko'; m.t = 0; world.inputLocked = true; }
         break;
       case 'ko':
         world.inputLocked = true; C.step(world);
+        if (m.ffa) {
+          var alive = F.filter(function (f) { return !f.ko; }), wn = alive.length === 1 ? F.indexOf(alive[0]) : -1, last = F[m.koOrder[m.koOrder.length - 1]] || F[0];
+          if (m.t === 8) { banner(wn < 0 ? 'DOUBLE K.O.' : 'K.O.!', '#ff2a2a', 1500); if (wn >= 0 && F[wn].hp >= F[wn].maxHp) subBanner('PERFECT!', 1500); }
+          if (m.t >= 130 && (last.state === 'ko' || m.t >= 240)) roundOver(wn);
+          break;
+        }
         if (m.t === 8) { var dbl = F[0].ko && F[1].ko, w0 = F[0].ko ? 1 : 0; banner(dbl ? 'DOUBLE K.O.' : 'K.O.!', '#ff2a2a', 1500); if (!dbl && F[w0].hp >= F[w0].maxHp) subBanner('PERFECT!', 1500); }
         var loser = F[0].ko ? F[0] : F[1];
         if ((m.t >= 130 && (loser.state === 'ko' || m.t >= 240))) roundOver(F[0].ko && F[1].ko ? -1 : F[0].ko ? 1 : 0);
         break;
       case 'timeup':
         C.step(world);
+        if (m.t >= 90 && m.ffa) { var bi = -1, bv = -1, tie = false; F.forEach(function (f, i) { if (f.ko) return; var r = f.hp / f.maxHp; if (r > bv + 0.001) { bv = r; bi = i; tie = false; } else if (Math.abs(r - bv) <= 0.001) tie = true; }); roundOver(tie ? -1 : bi); break; }
         if (m.t >= 90) { var r0 = F[0].hp / F[0].maxHp, r1 = F[1].hp / F[1].maxHp; roundOver(Math.abs(r0 - r1) < 0.001 ? -1 : r0 > r1 ? 0 : 1); }
         break;
       case 'roundEnd':
         C.step(world); setWinPose();
         if (m.t >= 110) {
-          if (m.wins[0] >= 2 || m.wins[1] >= 2) { m.phase = 'matchEnd'; m.t = 0; m.winner = m.wins[0] >= 2 ? 0 : 1; }
+          if (m.ffa ? Math.max.apply(null, m.wins) >= 2 : m.wins[0] >= 2 || m.wins[1] >= 2) { m.phase = 'matchEnd'; m.t = 0; m.winner = m.ffa ? m.wins.indexOf(Math.max.apply(null, m.wins)) : m.wins[0] >= 2 ? 0 : 1; }
           else { m.round++; beginRound(); }
         }
         break;
@@ -224,13 +239,13 @@
         C.step(world); setWinPose();
         if (m.t === 50 && !m.ended) {
           m.ended = true;
-          m.result = { winner: m.winner, wins: m.wins.slice(), rounds: m.round, stats: [F[0].stats, F[1].stats], hp: [F[0].hp, F[1].hp], frames: world.frame };
+          m.result = { winner: m.winner, wins: m.wins.slice(), rounds: m.round, stats: F.map(function (f) { return f.stats; }), hp: F.map(function (f) { return f.hp; }), frames: world.frame };
           if (m.mode === 'demo') { setTimeout(function () { if (match === m && G.onDemoEnd) G.onDemoEnd(); }, 1500); }
-          else { sfx(m.winner === 0 || m.mode === '2p' ? 'win' : 'lose'); if (G.onMatchEnd) G.onMatchEnd(m.result, m); }
+          else { sfx(m.winner === (m.online ? m.cfg.mySide : 0) || m.mode === '2p' || (m.online && m.cfg.mySide > 2) ? 'win' : 'lose'); if (G.onMatchEnd) G.onMatchEnd(m.result, m); }
         }
         break;
     }
-    if (!fast) { syncRig(0, true); syncRig(1, true); }
+    if (!fast) { for (var si = 0; si < F.length; si++) syncRig(si, true); }
   }
   function setWinPose() {
     var wi = match.phase === 'matchEnd' ? match.winner : match.lastWinner; if (wi == null || wi < 0) return;
@@ -238,8 +253,9 @@
   }
   function roundOver(w) {
     var m = match;
-    if (w >= 0) m.wins[w]++; else { m.wins[0]++; m.wins[1]++; if (m.wins[0] >= 2 && m.wins[1] >= 2) { m.wins = [1, 1]; } }
-    m.lastWinner = w; m.roundsLog.push({ w: w, ko: !!(F[0].ko || F[1].ko), time: m.timer <= 0 }); m.phase = 'roundEnd'; m.t = 0;
+    if (m.ffa) { if (w >= 0) m.wins[w]++; }
+    else if (w >= 0) m.wins[w]++; else { m.wins[0]++; m.wins[1]++; if (m.wins[0] >= 2 && m.wins[1] >= 2) { m.wins = [1, 1]; } }
+    m.lastWinner = w; m.roundsLog.push({ w: w, ko: F.some(function (f) { return f.ko; }), time: m.timer <= 0 }); m.phase = 'roundEnd'; m.t = 0;
     if (w < 0) banner('DRAW', '#ffffff', 1200);
   }
   function trainingTick() {
@@ -256,6 +272,7 @@
   /* ---------- events -> effects ---------- */
   function sfx(n, a) { if (match && match.mode === 'demo') return; GB.Audio.play(n, a); }
   function onEvent(type, d) {
+    if (type === 'ko' && match && match.ffa) match.koOrder.push(F.indexOf(d.def));
     if (fast) { if (type === 'ko') slowT = 0; return; }
     var col;
     switch (type) {
@@ -295,10 +312,11 @@
         break;
       case 'superHit': break;
       case 'lock': sfx('zap'); break;
-      case 'ko': slowT = 1.5; sfx('ko'); shake = 0.6; FX.flash(d.def.x, d.def.y + 1.2, '#ffffff', 6); break;
+      case 'ko': if (match && match.ffa) { var left = F.filter(function (f) { return !f.ko; }).length; if (left >= 2) { subBanner(((match.cfg.names && match.cfg.names[F.indexOf(d.def)]) || d.def.name) + ' IS OUT!', 1400); } }
+        slowT = 1.5; sfx('ko'); shake = 0.6; FX.flash(d.def.x, d.def.y + 1.2, '#ffffff', 6); break;
     }
   }
-  var comboTimers = [0, 0];
+  var comboTimers = [0, 0, 0];
   function showCombo(side, n) {
     var el = $('combo' + side); el.innerHTML = n + '<small>HITS!</small>'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
     clearTimeout(comboTimers[side]); comboTimers[side] = setTimeout(function () { el.classList.remove('on'); }, 1100);
@@ -322,13 +340,14 @@
       var a = Math.sin(time * 0.25) * 0.35; tx = Math.sin(a) * 10; tz = Math.cos(a) * 10; ty = 2.6; lx = 0; ly = 1.4; k = 1 - Math.pow(0.05, dt);
     } else if (world && match) {
       var a0 = F[0], a1 = F[1], mid = (a0.x + a1.x) / 2, sep = Math.abs(a0.x - a1.x), maxY = Math.max(a0.y, a1.y);
+      if (F.length > 2) { var mnx = 1e9, mxx = -1e9; maxY = 0; F.forEach(function (f) { mnx = Math.min(mnx, f.x); mxx = Math.max(mxx, f.x); maxY = Math.max(maxY, f.y); }); mid = (mnx + mxx) / 2; sep = mxx - mnx; }
       var width = Math.max(8.2, sep + 5.0), height = 5.1 + maxY * 0.95;
       var D = Math.max(width / 2 / tanH, height / 2 / tanV); D = Math.min(D, 17);
       tx = mid; ly = 1.3 + maxY * 0.55; ty = ly + 0.55 + D * 0.06; tz = D; lx = mid;
       if (match.phase === 'intro' && match.t < 90) { var p = match.t / 90, e = 1 - Math.pow(1 - p, 3); tx = mid + (1 - e) * -5; tz = D + (1 - e) * -4; ty = ty + (1 - e) * 1.5; k = 1 - Math.pow(0.02, dt); }
       if (world.cine) { var f = world.cine.f; tx = f.x + f.facing * 2.4; ty = f.y + 1.9; tz = 3.6; lx = f.x; ly = f.y + 1.55; k = 1 - Math.pow(0.0005, dt); }
       else if (world.superCamT > 0) { var o = Math.sin(time * 0.9) * 0.5; tx = mid + Math.sin(o) * 5.2; tz = Math.cos(o) * 5.2; ty = 1.9; lx = mid; ly = 1.3; k = 1 - Math.pow(0.01, dt); }
-      else if (match.phase === 'ko' && match.t < 120) { var lo = F[0].ko ? F[0] : F[1]; tx = lo.x * 0.7 + mid * 0.3; tz = 6.2; ty = 1.9; lx = lo.x; ly = 0.9 + lo.y * 0.5; k = 1 - Math.pow(0.02, dt); }
+      else if (match.phase === 'ko' && match.t < 120) { var lo = match.ffa ? (F[match.koOrder[match.koOrder.length - 1]] || F[0]) : F[0].ko ? F[0] : F[1]; tx = lo.x * 0.7 + mid * 0.3; tz = 6.2; ty = 1.9; lx = lo.x; ly = 0.9 + lo.y * 0.5; k = 1 - Math.pow(0.02, dt); }
       else if (match.phase === 'matchEnd' || (match.phase === 'roundEnd' && match.lastWinner >= 0 && match.t > 20)) {
         var wi = match.phase === 'matchEnd' ? match.winner : match.lastWinner, wf = F[wi], ang = Math.sin(time * 0.4) * 0.5;
         tx = wf.x + Math.sin(ang) * 5.4; tz = Math.cos(ang) * 5.4; ty = 1.9; lx = wf.x; ly = 1.4; k = 1 - Math.pow(0.03, dt);
@@ -346,11 +365,11 @@
   function setC(el, cls, key, on) { if (hudCache[key] !== on) { hudCache[key] = on; el.classList.toggle(cls, on); } }
   G.hudInit = function (portraits) {
     if (!match) return; portraits = portraits || G._portraits;
-    [0, 1].forEach(function (i) {
-      var bar = document.querySelector('.hbar.p' + (i + 1)), f = F[i];
+    F.forEach(function (f, i) {
+      var bar = document.querySelector('.hbar.p' + (i + 1));
       bar.style.setProperty('--fc', f.def.color);
       bar.querySelector('.nm').textContent = f.def.name;
-      bar.querySelector('.tag').textContent = match.mode === 'demo' ? '' : i === 0 ? 'P1' : match.mode === '2p' ? 'P2' : match.mode === 'training' ? 'DUMMY' : 'CPU';
+      bar.querySelector('.tag').textContent = match.mode === 'demo' ? '' : match.online || match.mode === 'online' ? ((match.cfg.names && match.cfg.names[i]) || 'P' + (i + 1)) : i === 0 ? 'P1' : i === 2 ? 'P3' : match.mode === '2p' ? 'P2' : match.mode === 'training' ? 'DUMMY' : 'CPU';
       var img = bar.querySelector('.por'); if (portraits && portraits[f.id]) img.src = portraits[f.id]; img.setAttribute('data-id', f.id); bar.setAttribute('data-id', f.id);
     });
     $('trainBar').classList.toggle('hidden', !match.training);
@@ -358,8 +377,8 @@
   };
   function updateHud() {
     if (!match || match.mode === 'demo') return;
-    for (var i = 0; i < 2; i++) {
-      var f = F[i], bar = i === 0 ? hudEls.b1 : hudEls.b2, pct = Math.max(0, f.hp / f.maxHp * 100).toFixed(1) + '%';
+    for (var i = 0; i < F.length; i++) {
+      var f = F[i], bar = i === 0 ? hudEls.b1 : i === 1 ? hudEls.b2 : hudEls.b3, pct = Math.max(0, f.hp / f.maxHp * 100).toFixed(1) + '%';
       setW(bar.fill, 'hp' + i, pct); setW(bar.trail, 'tr' + i, pct); setC(bar.hp, 'low', 'low' + i, f.hp / f.maxHp < 0.25);
       setW(bar.mfill, 'm' + i, Math.floor(f.meter) + '%');
       var sp = f.meter >= C.SPECIAL_COST, full = f.meter >= C.SUPER_COST;
@@ -378,7 +397,7 @@
   var hudEls = null;
   function grabHud() {
     function b(sel) { var r = document.querySelector(sel); return { hp: r.querySelector('.hp'), fill: r.querySelector('.fill'), trail: r.querySelector('.trail'), meter: r.querySelector('.meter'), mfill: r.querySelector('.mfill'), mtxt: r.querySelector('.mtxt'), pips: r.querySelectorAll('.pips i') }; }
-    hudEls = { b1: b('.hbar.p1'), b2: b('.hbar.p2'), timer: $('timer'), spBtn: document.querySelector('.tb.special'), suBtn: document.querySelector('.tb.super') };
+    hudEls = { b1: b('.hbar.p1'), b2: b('.hbar.p2'), b3: b('.hbar.p3'), timer: $('timer'), spBtn: document.querySelector('.tb.special'), suBtn: document.querySelector('.tb.super') };
   }
 
   /* ---------- showroom (character select) ---------- */
@@ -472,14 +491,14 @@
     var ts = slowT > 0 ? 0.3 : 1; if (slowT > 0) slowT -= dt;
     if (match && !manual) {
       acc += dt * ts; var n = 0;
-      while (acc >= C.DT && n < 4) { fixedStep(); acc -= C.DT; n++; }
+      while (acc >= C.DT && n < 4) { if (fixedStep() === false) { acc = Math.min(acc, C.DT); break; } acc -= C.DT; n++; }
       if (n >= 4) acc = 0;
     }
     if (preview) {
       for (var i = 0; i < 2; i++) if (rigs[i]) Mdl.applyPose(rigs[i], GB.Models.POSES.idle(0, time + i * 0.7), 0.2);
     }
     if (world && !fast) {
-      for (var j = 0; j < 2; j++) {
+      for (var j = 0; j < F.length; j++) {
         var f = F[j];
         if (f && f.state === 'atk' && f.move && (f.move.def.kind === 'super' || (world.cine && world.cine.f === f))) for (var a = 0; a < 2; a++) FX.aura(f.x, f.y, 2.3 * f.sc, a ? '#ffffff' : f.def.color);
         if (f && f.meter >= C.SUPER_COST && Math.random() < 0.25 && match && match.mode !== 'demo') FX.aura(f.x, f.y, 2.2 * f.sc, f.def.color);
@@ -504,14 +523,14 @@
     },
     setManual: function (b) { manual = !!b; },
     setFast: function (b) { fast = !!b; },
-    step: function (n, until) { for (var i = 0; i < (n || 1); i++) { fixedStep(); if (until && match && until(match, world)) break; } if (fast) { syncRig(0, true); syncRig(1, true); } return G.debug.state(); },
+    step: function (n, until) { for (var i = 0; i < (n || 1); i++) { fixedStep(); if (until && match && until(match, world)) break; } if (fast) { for (var si = 0; si < F.length; si++) syncRig(si, true); } return G.debug.state(); },
     setBot: function (fn, fn2) { if (match) { match.bot = fn; match.bot2 = fn2 || null; } },
     meter: function (side, v) { if (F[side]) F[side].meter = v; },
     hp: function (side, v) { if (F[side]) F[side].hp = v; },
     pos: function (side, x) { if (F[side]) { F[side].x = x; F[side].y = 0; F[side].vy = 0; } },
     fighters: function () { return F; }, world: function () { return world; }, camera: function () { return camera; },
-    skipIntro: function () { if (match && match.phase === 'intro') { match.phase = 'fight'; match.t = 0; world.inputLocked = false; F[0].state = F[1].state = 'idle'; } },
-    identity: function () { return [0, 1].map(function (i) { var bar = document.querySelector('.hbar.p' + (i + 1)); return { fighter: F[i] && F[i].id, rig: rigs[i] && rigs[i].root.userData.fighterId, plate: plates[i] ? plates[i].userData.fighterId : null, plateLabel: plates[i] ? plates[i].userData.label : null, hudName: bar.querySelector('.nm').textContent, hudId: bar.getAttribute('data-id'), defName: F[i] && F[i].def.name }; }); },
+    skipIntro: function () { if (match && match.phase === 'intro') { match.phase = 'fight'; match.t = 0; world.inputLocked = false; F.forEach(function (f) { f.state = 'idle'; }); } },
+    identity: function () { return F.map(function (_, i) { var bar = document.querySelector('.hbar.p' + (i + 1)); return { fighter: F[i] && F[i].id, rig: rigs[i] && rigs[i].root.userData.fighterId, plate: plates[i] ? plates[i].userData.fighterId : null, plateLabel: plates[i] ? plates[i].userData.label : null, hudName: bar.querySelector('.nm').textContent, hudId: bar.getAttribute('data-id'), defName: F[i] && F[i].def.name }; }); },
     renderOnce: function () { updateCamera(0.016); updateVis(0.016); FX.update(0.016, camera, cam.x); renderer.render(scene, camera); }
   };
 })();

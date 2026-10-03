@@ -235,3 +235,9 @@ body.touch #pauseBtn{width:54px;height:40px;font-size:18px}
   #startBtn{height:54px;font-size:24px}
   .pbox{gap:6px}.pbox .big{height:40px;font-size:17px}.ptitle{font-size:30px}
 }
+
+/* 3-player free-for-all (online): third bar sits under the timer */
+.hbar.p3{display:none;left:50%;transform:translateX(-50%);top:calc(60px + var(--st));width:min(38%,340px)}
+body.ffa .hbar.p3{display:flex}
+#combo2{left:50%;transform:translateX(-50%);top:46%;text-align:center}
+@media (max-height:500px){ .hbar.p3{top:calc(50px + var(--st));width:min(40%,300px)} .hbar.p3 .por{width:34px;height:34px} }

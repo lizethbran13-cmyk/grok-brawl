@@ -19,7 +19,7 @@
   function reachOf(o) { return 1.75 * o.sc + 0.45; }
 
   AI.think = function (ai, w) {
-    var f = ai.f, o = w.f[0] === f ? w.f[1] : w.f[0], p = ai.p, c = f.ctl;
+    var f = ai.f, o = w.f.length > 2 ? GB.Combat.target(f, w) : w.f[0] === f ? w.f[1] : w.f[0], p = ai.p, c = f.ctl;
     ai.frame++;
     ai.hist.push(snapshot(o, w)); if (ai.hist.length > 40) ai.hist.shift();
     var v = ai.hist[Math.max(0, ai.hist.length - 1 - Math.round(p.react))];
