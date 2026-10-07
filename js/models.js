@@ -107,23 +107,33 @@
     function both(bone, k, s, p, c, r) { add(bone + 'L', k, s, [p[0], p[1], p[2]], c, r); add(bone + 'R', k, s, [-p[0], p[1], p[2]], c, r ? [r[0], -r[1], -r[2]] : null); }
     var C = {}; // palette
     var id = def.id;
-    var skin = { blaze: '#f0b98a', volt: '#c98a5a', boulder: '#8f9a86', nova: '#e9c6a8', frost: '#cfe9ff', sakura: '#ffd9c2', prime: '#2a2a3a' }[id];
+    var skin = { blaze: '#f0b98a', volt: '#c98a5a', boulder: '#8f9a86', nova: '#e9c6a8', frost: '#cfe9ff', sakura: '#ffd9c2', prime: '#2a2a3a', riptide: '#d9a06e', glitch: '#c8c8d8' }[id];
     var top = def.color, acc = def.color2;
-    var pants = { blaze: '#2a1a1a', volt: '#1d2440', boulder: '#5b4a3a', nova: '#2b1747', frost: '#2b5d8a', sakura: '#ff5fb0', prime: '#15151f' }[id];
-    var glove = { blaze: '#ffb020', volt: '#22e5ff', boulder: '#a8a29e', nova: '#ff6be6', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531' }[id];
-    var boot = { blaze: '#ffffff', volt: '#ffd400', boulder: '#6b625a', nova: '#1a0f2e', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531' }[id];
-    var chestW = id === 'boulder' ? 0.98 : id === 'volt' ? 0.7 : 0.8;
+    var pants = { blaze: '#2a1a1a', volt: '#1d2440', boulder: '#5b4a3a', nova: '#2b1747', frost: '#2b5d8a', sakura: '#ff5fb0', prime: '#15151f', riptide: '#0f4a52', glitch: '#1b1b2a' }[id];
+    var glove = { blaze: '#ffb020', volt: '#22e5ff', boulder: '#a8a29e', nova: '#ff6be6', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531', riptide: '#ff7f50', glitch: '#9dff00' }[id];
+    var boot = { blaze: '#ffffff', volt: '#ffd400', boulder: '#6b625a', nova: '#1a0f2e', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531', riptide: '#ff7f50', glitch: '#ff2bd6' }[id];
+    if (id === 'glitch') top = '#2a2a3c';
+    var chestW = id === 'boulder' ? 0.98 : id === 'riptide' ? 1.04 : id === 'volt' ? 0.7 : id === 'glitch' ? 0.66 : 0.8;
     // torso
     add('chest', 'box', [chestW, 0.6, 0.48], [0, 0.38, 0], id === 'sakura' ? '#ffffff' : top);
     add('chest', 'box', [chestW * 0.8, 0.26, 0.4], [0, 0.06, 0], id === 'sakura' ? '#ffffff' : top);
     add('hips', 'box', [0.64, 0.3, 0.4], [0, 0, 0], pants);
     add('hips', 'box', [0.68, 0.1, 0.44], [0, 0.13, 0], id === 'prime' ? '#ffc531' : id === 'volt' ? '#111' : '#151018');
     // head base
-    var hs = id === 'boulder' ? 0.5 : 0.56;
-    add('head', 'box', [hs, hs, hs * 0.94], [0, 0.3, 0], skin);
+    var hs = id === 'boulder' ? 0.5 : id === 'riptide' ? 0.52 : 0.56;
+    if (id !== 'glitch') add('head', 'box', [hs, hs, hs * 0.94], [0, 0.3, 0], skin);
     // eyes / face
     var eyeC = id === 'prime' ? '#ffd84d' : id === 'nova' ? '#ff9bf0' : '#111018';
-    if (id === 'prime' || id === 'nova') {
+    if (id === 'glitch') {
+      // CRT monitor head with a pixel face
+      add('head', 'box', [0.84, 0.64, 0.6], [0, 0.32, -0.02], '#3a3a4e');
+      add('head', 'box', [0.7, 0.5, 0.04], [0, 0.33, 0.29], '#9dff00');
+      add('head', 'box', [0.11, 0.13, 0.03], [0.15, 0.39, 0.31], '#0c1a00'); add('head', 'box', [0.11, 0.13, 0.03], [-0.15, 0.39, 0.31], '#0c1a00');
+      add('head', 'box', [0.3, 0.06, 0.03], [0, 0.22, 0.31], '#0c1a00'); add('head', 'box', [0.06, 0.06, 0.03], [0.18, 0.26, 0.31], '#0c1a00'); add('head', 'box', [0.06, 0.06, 0.03], [-0.18, 0.26, 0.31], '#0c1a00');
+      add('head', 'box', [0.56, 0.4, 0.3], [0, 0.32, -0.42], '#2a2a3a'); // CRT back
+      add('head', 'cyl', [0.04, 0.42, 0.04], [0.22, 0.82, -0.05], '#c8c8d8', [0, 0, -0.35]); add('head', 'ball', [0.13, 0.13, 0.13], [0.3, 1.02, -0.05], '#ff2bd6');
+      add('head', 'cyl', [0.04, 0.34, 0.04], [-0.2, 0.78, -0.05], '#c8c8d8', [0, 0, 0.45]); add('head', 'ball', [0.11, 0.11, 0.11], [-0.28, 0.93, -0.05], '#9dff00');
+    } else if (id === 'prime' || id === 'nova') {
       add('head', 'box', [0.13, 0.06, 0.04], [0.12, 0.33, hs * 0.47 + 0.01], eyeC); add('head', 'box', [0.13, 0.06, 0.04], [-0.12, 0.33, hs * 0.47 + 0.01], eyeC);
     } else {
       add('head', 'box', [0.1, 0.13, 0.04], [0.12, 0.32, hs * 0.47 + 0.01], '#ffffff'); add('head', 'box', [0.1, 0.13, 0.04], [-0.12, 0.32, hs * 0.47 + 0.01], '#ffffff');
@@ -132,9 +142,9 @@
       add('head', 'box', [0.14, 0.035, 0.04], [0, 0.16, hs * 0.47 + 0.01], '#7a2a2a');
     }
     // arms & legs base
-    var armC = (id === 'blaze' || id === 'sakura') ? skin : top;
+    var armC = (id === 'blaze' || id === 'sakura' || id === 'riptide') ? skin : top;
     both('ua', 'box', [0.24, 0.4, 0.26], [0, -0.18, 0], armC);
-    both('ua', 'ball', [0.34, 0.32, 0.34], [0, 0, 0], id === 'sakura' ? '#ffffff' : top);
+    both('ua', 'ball', [0.34, 0.32, 0.34], [0, 0, 0], id === 'sakura' ? '#ffffff' : id === 'riptide' ? skin : top);
     both('fa', 'box', [0.22, 0.3, 0.24], [0, -0.14, 0], armC);
     both('fa', 'box', [0.3, 0.28, 0.32], [0, -0.38, 0.02], glove);
     both('th', 'box', [0.3, 0.5, 0.32], [0, -0.25, 0], pants);
@@ -197,6 +207,25 @@
       add('chest', 'box', [0.12, 0.3, 0.06], [0.28, -0.14, 0.24], '#ff5fb0', [0, 0, 0.3]);
       add('chest', 'box', [0.4, 0.06, 0.05], [0, 0.48, 0.25], '#ff5fb0', [0, 0, -0.6]);
       add('chest', 'ball', [0.16, 0.16, 0.06], [-0.18, 0.4, 0.25], '#ff8fd0');
+    } else if (id === 'riptide') {
+      // luchador mask, shark dorsal fin, coral championship belt, thick forearms
+      add('head', 'box', [hs + 0.04, hs * 0.72, hs * 0.94 + 0.04], [0, 0.38, 0], '#14b8a6');
+      add('head', 'box', [0.16, 0.05, 0.04], [0.12, 0.42, hs * 0.47 + 0.035], '#ff7f50', [0, 0, -0.3]); add('head', 'box', [0.16, 0.05, 0.04], [-0.12, 0.42, hs * 0.47 + 0.035], '#ff7f50', [0, 0, 0.3]);
+      add('head', 'cone4', [0.12, 0.62, 0.62], [0, 0.82, -0.08], '#ff7f50', [-0.4, 0, 0]); // head fin
+      add('chest', 'cone4', [0.14, 1.1, 0.9], [0, 0.95, -0.42], '#0e8f86', [-0.55, 0, 0]); // big back fin
+      add('chest', 'box', [1.08, 0.18, 0.54], [0, -0.03, 0], '#ff7f50'); // belt
+      add('chest', 'box', [0.34, 0.24, 0.06], [0, -0.03, 0.27], '#ffd166');
+      add('chest', 'box', [0.16, 0.66, 0.05], [0.28, 0.38, 0.25], '#0e8f86'); add('chest', 'box', [0.16, 0.66, 0.05], [-0.28, 0.38, 0.25], '#0e8f86'); // singlet straps
+      add('chest', 'box', [0.5, 0.24, 0.05], [0, 0.12, 0.25], '#0e8f86');
+      both('fa', 'box', [0.3, 0.12, 0.32], [0, -0.2, 0], '#14b8a6'); // wrist wraps
+      both('sh', 'box', [0.33, 0.1, 0.33], [0, -0.05, 0], '#14b8a6');
+    } else if (id === 'glitch') {
+      // hoodie with neon pixel trim, glitchy shoulder blocks
+      add('chest', 'box', [0.7, 0.12, 0.5], [0, 0.68, 0], '#9dff00');
+      add('chest', 'box', [0.12, 0.12, 0.06], [0.12, 0.42, 0.25], '#ff2bd6'); add('chest', 'box', [0.12, 0.12, 0.06], [-0.04, 0.3, 0.25], '#9dff00'); add('chest', 'box', [0.12, 0.12, 0.06], [0.2, 0.18, 0.25], '#00e1ff');
+      add('chest', 'box', [0.7, 0.1, 0.5], [0, -0.03, 0], '#9dff00');
+      both('ua', 'box', [0.2, 0.2, 0.2], [0.14, 0.18, 0.08], '#ff2bd6', [0.4, 0.3, 0]); both('ua', 'box', [0.14, 0.14, 0.14], [0.2, 0.02, -0.12], '#9dff00', [0, 0.6, 0.3]);
+      both('sh', 'box', [0.3, 0.08, 0.32], [0, -0.3, 0], '#9dff00');
     } else if (id === 'prime') {
       [[0, 0.72, 0.1], [0.18, 0.66, 0.1], [-0.18, 0.66, 0.1], [0.09, 0.7, 0.12], [-0.09, 0.7, 0.12]].forEach(function (h, i) { add('head', 'cone4', [0.1, i ? 0.22 : 0.32, 0.1], h, '#ffc531'); });
       add('head', 'box', [hs + 0.06, 0.12, hs + 0.04], [0, 0.6, 0], '#ffc531');
@@ -229,7 +258,7 @@
     seg(S.hips, pivot);
     var torso = grp('torso', pivot, 0, 0.1, 0); seg(S.chest, torso);
     var head = grp('head', torso, 0, 0.72, 0); seg(S.head, head);
-    var sw = def.id === 'boulder' ? 0.6 : def.id === 'volt' ? 0.45 : 0.5;
+    var sw = def.id === 'boulder' ? 0.6 : def.id === 'riptide' ? 0.62 : def.id === 'volt' || def.id === 'glitch' ? 0.43 : 0.5;
     var sL = grp('sL', torso, sw, 0.58, 0); seg(S.uaL, sL); var eL = grp('eL', sL, 0, -0.38, 0); seg(S.faL, eL);
     var sR = grp('sR', torso, -sw, 0.58, 0); seg(S.uaR, sR); var eR = grp('eR', sR, 0, -0.38, 0); seg(S.faR, eR);
     var hL = grp('hL', pivot, 0.19, -0.04, 0); seg(S.thL, hL); var kL = grp('kL', hL, 0, -0.5, 0); seg(S.shL, kL);
@@ -298,6 +327,9 @@
     win3: function (t, tm) { return mix(GUARD, { py: 0, ty: 0.3, sLx: -2.9, sLz: 0.5, sRx: -2.9, sRz: -0.5, eL: -0.3, eR: -0.3, hx: -0.3, hLx: -0.1, kL: 0.1, hRx: 0.1, kR: 0.1 }); },
     ko: function () { return { py: -0.72, prx: -1.5, sLz: 1.4, sRz: -1.4, hLx: 0.15, hRx: -0.15, hx: -0.3 }; },
     dizzy: function (t, tm) { return mix(GUARD, { py: -0.2, tx: 0.3, prz: Math.sin(tm * 4) * 0.15, hx: 0.4, sLx: -0.2, sRx: -0.2, sLz: 0.3, sRz: -0.3, eL: -0.3, eR: -0.3 }); },
+    grab: function () { return mix(GUARD, { py: -0.22, tx: 0.45, ty: 0, sLx: -1.55, sLz: 0.55, eL: -0.35, sRx: -1.55, sRz: -0.55, eR: -0.35, hLx: -0.9, kL: 0.9, hRx: 0.5, kR: 0.5 }); },
+    spinthrow: function () { return mix(GUARD, { py: -0.1, tx: 0.1, ty: 0, sLx: -1.5, sLz: 1.2, eL: -0.2, sRx: -1.5, sRz: -1.2, eR: -0.2, hLx: -0.4, hLz: 0.3, kL: 0.5, hRx: 0.3, hRz: -0.3, kR: 0.4 }); },
+    summon: function (t, tm) { var s = Math.sin(tm * 14) * 0.08; return mix(GUARD, { py: -0.05, tx: -0.2, ty: 0, hx: -0.35, sLx: -2.8 + s, sLz: 0.65, eL: -0.25, sRx: -2.8 - s, sRz: -0.65, eR: -0.25, hLx: -0.25, hLz: 0.25, kL: 0.3, hRx: 0.25, hRz: -0.25, kR: 0.3 }); },
     taunt: function (t, tm) { return mix(GUARD, { py: 0, ty: 0.2, sRx: -1.5, sRz: 1.2, eR: -1.4, hy: 0.4 }); }
   };
 })();

@@ -36,7 +36,7 @@
       '#ol .olCode{background:#1b0d3d;border:2px solid #3ff0ff;border-radius:10px;padding:2px 10px;font-weight:900;letter-spacing:3px;color:#3ff0ff}' +
       '#ol .olVs{display:flex;gap:10px;align-items:center;justify-content:center;font-weight:900;font-size:16px}#ol .olVs i{font-style:normal;color:#ffe14d}' +
       '#ol .olP{padding:2px 10px;border-radius:10px;border:2px solid var(--pc);color:#fff;background:rgba(0,0,0,.25)}' +
-      '#ol .olGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:6px 0}' +
+      '#ol .olGrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin:6px 0}' +
       '#ol .olCard{position:relative;border:3px solid rgba(255,255,255,.25);border-radius:12px;background:#140a30 center 30%/cover no-repeat;min-height:104px;cursor:pointer;color:#fff;font:900 13px "Trebuchet MS",sans-serif;display:flex;align-items:flex-end;justify-content:center;padding:4px;touch-action:manipulation}' +
       '#ol .olCard span{background:rgba(0,0,0,.6);border-radius:6px;padding:1px 6px}#ol .olCard.me{border-color:var(--mc);box-shadow:0 0 16px var(--mc)}#ol .olCard.op{outline:3px dashed var(--oc);outline-offset:-8px}' +
       '#ol .olCard .tg{position:absolute;top:4px;font-size:11px;padding:1px 6px;border-radius:6px;color:#1b1030}#ol .olCard .tg.a{left:4px;background:var(--mc)}#ol .olCard .tg.b{right:4px;background:var(--oc)}' +
@@ -50,7 +50,7 @@
       '#ol .olFmt{display:flex;gap:6px;justify-content:center;align-items:center;margin:2px 0 4px;font-size:13px}#ol .olFmt button{border:2px solid rgba(255,255,255,.3);background:#1b0d3d;color:#fff;border-radius:10px;padding:5px 10px;font:900 13px "Trebuchet MS",sans-serif;cursor:pointer}#ol .olFmt button.on{border-color:#ff4fd8;background:#4a0f3e;color:#ffd0f3}#ol .olFmt button:disabled{cursor:default}' +
       '#ol .olCard .tg.b2{top:24px}' +
       '@media (max-height:440px){#ol .olBox{padding:8px 10px}#ol h2{font-size:18px;margin:0 0 4px}#ol .olCard{min-height:84px}#ol .olBig{min-height:46px;font-size:18px;margin:4px}#ol .olGrid{gap:6px;margin:4px 0}}' +
-      '@media (max-width:560px){#ol .olGrid{grid-template-columns:repeat(3,1fr)}}';
+      '@media (max-width:560px){#ol .olGrid{grid-template-columns:repeat(4,1fr)}}';
     document.head.appendChild(css);
     var d = document.createElement('div'); d.id = 'ol'; d.innerHTML = '<div class="olBox" id="olBox"></div>'; document.body.appendChild(d);
     var w = document.createElement('div'); w.id = 'olWait'; w.className = 'hidden'; document.body.appendChild(w);

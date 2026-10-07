@@ -85,8 +85,29 @@
       var st = o.def.super.type;
       if (r0 < p.dodge * 2 + p.block * 0.5) {
         if (st === 'quake' || st === 'rush' || st === 'glacier') { press('up'); ai.planDir = -1; return; }
+        if (st === 'maelstrom') { ai.blockUntil = ai.frame + 75; c.block = true; return; } // pull can't be walked out of: block the geyser
+        if (st === 'pixelstorm') { press('dash'); moveDir(-toward); return; }
         ai.blockUntil = ai.frame + 50;
       }
+    }
+    // arena hazards / pixel drops: step out of the warning circle (or block it)
+    var hzNear = null; (w.hz || []).forEach(function (h) { if (h.owner !== f && h.t < h.warn && h.warn - h.t < 56 && Math.abs(h.x - f.x) < h.r + 0.95) hzNear = h; });
+    if (hzNear) {
+      if (ai.hzRolled !== hzNear) { ai.hzRolled = hzNear; var rh = rnd(ai), av = 0.45 + 0.25 * p.level; ai.hzMode = rh < av ? 1 : rh < av + 0.5 * p.block ? 2 : 0; }
+      if (ai.hzMode === 1) { var away = Math.sign(f.x - hzNear.x) || -toward; if (Math.abs(f.x + away * 1.5) > w.half - 0.4) away = -away; moveDir(away); if (hzNear.kind === 'pixel' && rnd(ai) < 0.08 + 0.1 * p.level) press('dash'); return; }
+      if (ai.hzMode === 2) { c.block = true; return; }
+    }
+    // enemy pixel mine on the floor between us: hop over it
+    var mine = null; w.projs.forEach(function (pr) { if (pr.mine && pr.owner !== f && pr.t >= pr.arm - 8 && Math.abs(pr.x - f.x) < 1.7 && Math.abs(pr.x - f.x) > 0.3 && Math.sign(pr.x - f.x) === toward) mine = pr; });
+    if (mine && ai.mineRolled !== mine) {
+      ai.mineRolled = mine;
+      if (rnd(ai) < 0.35 + 0.3 * p.level) { press('up'); moveDir(toward); ai.planDir = 1; ai.jumpCd = 30; return; }
+      if (rnd(ai) < 0.5) { ai.plan = 'wait'; ai.planEnd = ai.frame + 30; }
+    }
+    // RIPTIDE: grab a turtling opponent
+    if (f.def.special.type === 'whirlgrab' && f.meter >= C.SPECIAL_COST && dist < 1.5 * f.sc && v.y < 0.2 && (v.state === 'block' || v.state === 'bstun' || v.state === 'idle') && ai.grabRolled !== Math.floor(ai.frame / 24)) {
+      ai.grabRolled = Math.floor(ai.frame / 24);
+      if (rnd(ai) < p.special * (v.state === 'idle' ? 0.25 : 0.7)) { press('special'); return; }
     }
     // incoming attack -> block / dodge roll once per enemy move
     if (oppAttacking && dist < reachOf(o) + (v.mvKind === 'special' ? 3 : 0.4) && ai.rolled !== v.mv) {
@@ -132,7 +153,7 @@
     }
     // super
     if (f.meter >= C.SUPER_COST && v.state !== 'down' && v.state !== 'getup' && !v.invuln && v.y < 0.3) {
-      var t = f.def.super.type, inRange = t === 'rush' ? dist < 6.5 : t === 'quake' ? true : t === 'beam' ? true : dist < 11;
+      var t = f.def.super.type, inRange = t === 'rush' ? dist < 6.5 : t === 'quake' ? true : t === 'beam' ? true : t === 'maelstrom' ? dist < 6 : dist < 11;
       if (inRange && rnd(ai) < p.superUse * 0.12) { press('super'); return; }
     }
 
@@ -178,7 +199,7 @@
 
   function startCombo(ai, f, o, press, dist, punish) {
     var p = ai.p, r = rnd(ai), combos;
-    var canS = f.meter >= C.SPECIAL_COST && f.def.special.type !== 'groundslam';
+    var canS = f.meter >= C.SPECIAL_COST && f.def.special.type !== 'groundslam' && f.def.special.type !== 'pixelmine';
     if (dist > 1.5) combos = [['k', 'k', 'k'], ['k', 'k'], ['k']];
     else combos = [['p', 'p', 'p'], ['p', 'p', 'k'], ['k', 'k', 'k'], ['p', 'k', 'k'], ['p', 'p'], ['p'], ['k', 'k']];
     var pick = combos[Math.floor(r * combos.length)].slice();
@@ -200,7 +221,7 @@
     W.wait = 0.4 + p.idleBias * 4;
     W.block = 0.2 + (o.state === 'atk' ? 1 : 0) * p.block;
     W.zone = projSp && meterOK && dist > 3.5 ? 2.5 * p.special : 0;
-    W.special = !projSp && meterOK ? (f.def.special.type === 'teleport' ? 1.4 : f.def.special.type === 'groundslam' ? (dist < 5 ? 1.2 : 0.3) : f.def.special.type === 'dashpunch' ? (dist < 5 && dist > 1.5 ? 1.5 : 0.3) : 0.3) * p.special : 0;
+    W.special = !projSp && meterOK ? (f.def.special.type === 'teleport' ? 1.4 : f.def.special.type === 'groundslam' ? (dist < 5 ? 1.2 : 0.3) : f.def.special.type === 'dashpunch' ? (dist < 5 && dist > 1.5 ? 1.5 : 0.3) : f.def.special.type === 'pixelmine' ? (dist > 2.2 && dist < 6.5 ? 1.6 : 0.4) : f.def.special.type === 'whirlgrab' ? (dist < 1.9 ? 1.2 : 0.1) : 0.3) * p.special : 0;
     W.jumpin = dist > 2 && dist < 5 ? 0.8 * p.aggr : 0.1;
     W.dashin = dist > 3 ? 0.9 * p.aggr : 0;
     W.bait = 0.3 + p.level * 0.25;

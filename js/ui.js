@@ -131,7 +131,7 @@
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = (Math.random() * (i + 1)) | 0, t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function startArcade(p1) {
     var opp = shuffle(GB.FIGHTERS.filter(function (f) { return !f.hidden && f.id !== p1; }).map(function (f) { return f.id; }));
-    var arenas = ['rooftop', 'vegas', 'dojo', 'volcano'];
+    var arenas = shuffle(['rooftop', 'vegas', 'dojo', 'volcano', 'moon', 'factory']);
     var list = opp.map(function (id, i) { return { id: id, arena: arenas[i % arenas.length] }; });
     list.push({ id: 'prime', arena: 'hangar', boss: true });
     arcade = { p1: p1, list: list, idx: 0, diff: GB.save.diff };

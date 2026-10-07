@@ -63,6 +63,9 @@
     select: function () { tone('square', 660, 0, 0.06, 0.12); },
     confirm: function () { if (!ctx) return; var t = ctx.currentTime; tone('square', 523, 0, 0.08, 0.15, t); tone('square', 784, 0, 0.14, 0.15, t + 0.07); },
     back: function () { tone('square', 440, 220, 0.1, 0.12); },
+    warn: function () { if (!ctx) return; var t = ctx.currentTime; tone('square', 880, 0, 0.08, 0.1, t); tone('square', 660, 0, 0.08, 0.1, t + 0.12); },
+    splash: function () { if (!ctx) return; var t = ctx.currentTime; noise(0.6, 0.5, 'lowpass', 2600, 300, t, 0, 1); tone('sine', 190, 60, 0.45, 0.4, t); },
+    pixel: function () { if (!ctx) return; var t = ctx.currentTime; [0, 7, 12].forEach(function (n, i) { tone('square', 523 * Math.pow(2, n / 12), 0, 0.06, 0.09, t + i * 0.04); }); },
     win: function () { if (!ctx) return; var t = ctx.currentTime; [0, 4, 7, 12, 7, 12, 16].forEach(function (n, i) { tone('square', 392 * Math.pow(2, n / 12), 0, 0.22, 0.13, t + i * 0.12); }); },
     lose: function () { if (!ctx) return; var t = ctx.currentTime; [7, 5, 3, 0].forEach(function (n, i) { tone('triangle', 330 * Math.pow(2, n / 12), 0, 0.3, 0.2, t + i * 0.2); }); },
     unlock: function () { if (!ctx) return; var t = ctx.currentTime; for (var i = 0; i < 8; i++) tone('sine', 523 * Math.pow(2, i / 6), 0, 0.2, 0.15, t + i * 0.07); }
@@ -76,7 +79,9 @@
     { bpm: 104, root: 50, scale: [0, 2, 5, 7, 9], bass: [0, 0, 5, 7, 0, 9, 7, 5], lead: 'triangle' },   // dojo pentatonic
     { bpm: 136, root: 40, scale: [0, 1, 5, 7], bass: [0, 0, 1, 0, 7, 0, 5, 1], lead: 'sawtooth' },     // volcano
     { bpm: 128, root: 42, scale: [0, 3, 6, 10], bass: [0, 6, 0, 3, 0, 10, 6, 3], lead: 'square' },     // hangar
-    { bpm: 112, root: 48, scale: [0, 4, 7, 11], bass: [0, 7, 4, 7, 0, 11, 7, 4], lead: 'triangle' }    // menu
+    { bpm: 112, root: 48, scale: [0, 4, 7, 11], bass: [0, 7, 4, 7, 0, 11, 7, 4], lead: 'triangle' },   // menu
+    { bpm: 96, root: 41, scale: [0, 2, 7, 9, 14], bass: [0, 0, 7, 0, 2, 0, 9, 7], lead: 'sine' },        // moon base
+    { bpm: 132, root: 47, scale: [0, 4, 7, 12], bass: [0, 12, 7, 12, 4, 12, 7, 0], lead: 'square' }     // gumball factory
   ];
   function midi(n) { return 440 * Math.pow(2, (n - 69) / 12); }
   function schedule() {

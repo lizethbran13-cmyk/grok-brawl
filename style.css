@@ -146,8 +146,8 @@ body.touch #pauseBtn{width:54px;height:40px;font-size:18px}
 .sinfo .sp b{font-family:var(--f);font-weight:normal;color:var(--y);font-size:13px;letter-spacing:.5px}
 .sinfo.wait{opacity:.55}
 .sbottom{position:absolute;left:calc(8px + var(--sl));right:calc(8px + var(--sr));bottom:calc(8px + var(--sb));display:flex;align-items:flex-end;justify-content:center;gap:10px}
-#cards,#acards{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap}
-.card{position:relative;width:min(84px,10.5vw);height:min(96px,23vh);border-radius:12px;border:3px solid var(--fc,#fff);background:#140a2e center/cover no-repeat;overflow:hidden;padding:0;box-shadow:0 3px 0 rgba(0,0,0,.5)}
+#cards,#acards{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;min-width:0;flex:0 1 auto}
+.card{position:relative;width:min(80px,8.4vw);flex:0 1 auto;min-width:0;height:min(96px,23vh);border-radius:12px;border:3px solid var(--fc,#fff);background:#140a2e center/cover no-repeat;overflow:hidden;padding:0;box-shadow:0 3px 0 rgba(0,0,0,.5)}
 .card .cn{position:absolute;left:0;right:0;bottom:0;font-size:12px;background:rgba(0,0,0,.7);padding:2px 0;font-family:var(--f);letter-spacing:.5px}
 .card.sel0{outline:4px solid #ff4a2e;outline-offset:1px;transform:translateY(-6px)}
 .card.sel1{box-shadow:0 0 0 4px #3ff0ff,0 3px 0 rgba(0,0,0,.5);transform:translateY(-6px)}
@@ -159,7 +159,8 @@ body.touch #pauseBtn{width:54px;height:40px;font-size:18px}
 .card.rand{background:linear-gradient(135deg,#ff4a2e,#7d3aff,#3ff0ff)}
 .card.rand::after{content:"?";position:absolute;inset:0 0 14px;display:flex;align-items:center;justify-content:center;font-family:var(--f);font-size:44px}
 .go{height:62px;font-size:24px;flex:none}
-.acard{width:min(130px,15vw);height:min(86px,22vh)}
+.acard{width:min(118px,10.6vw);height:min(86px,22vh);flex:0 1 auto;min-width:0}
+#acards .card .cn{font-size:11px;line-height:1.1;padding:2px 1px}
 .acard.sel0{outline:4px solid var(--y)}
 .aname{position:absolute;left:0;right:0;top:calc(60px + var(--st));text-align:center;font-family:var(--f);font-size:30px;text-shadow:0 3px 0 #000,0 0 18px #ff4fd8}
 .aname small{display:block;font-family:var(--t);font-size:15px;color:#ffd9f2}

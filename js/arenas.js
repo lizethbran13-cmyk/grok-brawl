@@ -1,4 +1,4 @@
-/* Grok Brawl - 5 low-poly arenas (shared materials, instancing, cheap animation) */
+/* Grok Brawl - 7 low-poly arenas (shared materials, instancing, cheap animation) */
 (function () {
   'use strict';
   var T = THREE;
@@ -230,7 +230,112 @@
     return o;
   }
 
-  var BUILDERS = { rooftop: rooftop, vegas: vegas, dojo: dojo, volcano: volcano, hangar: hangar };
+  /* ---------- MOON BASE (low gravity + meteor shower) ---------- */
+  function moon(root) {
+    var o = { sky: skyTex(['#000005', '#03041a', '#0d1238', '#1c2350'], 320, function (g, w, h) {
+      // milky way band
+      for (var i = 0; i < 260; i++) { var x = Math.random() * w, y = h * 0.15 + x * 0.35 + (Math.random() - 0.5) * 60; g.fillStyle = 'rgba(200,210,255,' + (0.15 + Math.random() * 0.4) + ')'; g.fillRect(x, y, 1, 1); }
+    }), fog: ['#0d1238', 40, 110], ambient: { type: 'dust', color: '#cfd8ff' } };
+    root.add(lights(root, '#dfe6ff', '#2a2e48', 0.9, '#ffffff', 0.95, 6, 12, 8));
+    var ft = cv(256, 256, function (g, w, h) {
+      g.fillStyle = '#8c90a0'; g.fillRect(0, 0, w, h);
+      for (var i = 0; i < 500; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'; g.fillRect(Math.random() * w, Math.random() * h, 3, 3); }
+      for (i = 0; i < 9; i++) { var x = Math.random() * w, y = Math.random() * h, r = 6 + Math.random() * 18; g.fillStyle = 'rgba(40,42,60,0.35)'; g.beginPath(); g.ellipse(x, y, r, r * 0.8, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,255,255,0.25)'; g.lineWidth = 2; g.beginPath(); g.ellipse(x - 1, y - 1, r, r * 0.8, 0, 3.6, 6.0); g.stroke(); }
+    });
+    floor(ft, root, 44, 18, [8, 3]);
+    // metal walkway for the fight lane with glowing edges
+    var wt = cv(256, 64, function (g, w, h) { g.fillStyle = '#4a5068'; g.fillRect(0, 0, w, h); g.strokeStyle = '#353a50'; g.lineWidth = 3; for (var x = 0; x < w; x += 32) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } g.fillStyle = '#5c6380'; for (x = 6; x < w; x += 32) { g.fillRect(x, 6, 4, 4); g.fillRect(x + 18, h - 10, 4, 4); } });
+    wt.wrapS = T.RepeatWrapping; wt.repeat.set(12, 1);
+    var wk = new T.Mesh(plane(), new T.MeshLambertMaterial({ map: wt })); wk.rotation.x = -Math.PI / 2; wk.position.set(0, 0.012, 0.2); wk.scale.set(22, 2.4, 1); root.add(wk);
+    var edgeA = M(box(), basic('#59e1ff'), 0, 0.03, 1.42, 22, 0.05, 0.06, root), edgeB = M(box(), basic('#59e1ff'), 0, 0.03, -1.02, 22, 0.05, 0.06, root);
+    // wall pylons marking the (wider) stage edges
+    [-10.6, 10.6].forEach(function (x) { M(box(), lam('#3a3f58'), x, 1.2, -0.6, 0.5, 2.4, 0.5, root); M(box(), basic('#ff5a5a'), x, 2.5, -0.6, 0.55, 0.12, 0.55, root); });
+    // domes, antenna, lander, rover
+    function dome(x, z, r) { var d = new T.Mesh(geo('dome', function () { return new T.SphereGeometry(0.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2); }), lam('#e4e8f2')); d.position.set(x, 0, z); d.scale.set(r, r, r); root.add(d); M(cyl(16), lam('#9aa2b8'), x, 0.1, z, r * 1.04, 0.2, r * 1.04, root); return d; }
+    dome(-9, -7, 6); dome(-3.5, -9, 3.6); dome(8.5, -8, 4.6);
+    var wl = []; for (var i = 0; i < 7; i++) wl.push([-9 + Math.cos(i * 0.45 - 1.35) * 2.9, 1.3 + Math.sin(i * 0.7) * 0.2, -7 + Math.sin(i * 0.45 - 1.35) * 0.4 + 2.6, 0.5, 0.3, 0.05]);
+    instanced(box(), basic('#ffe9a8'), wl, root);
+    M(box(), lam('#b8bfd0'), -6.2, 0.6, -6.6, 3.2, 1.2, 1.2, root); // tunnel between domes
+    M(cyl(6), lam('#9aa2b8'), 4, 4, -10, 0.25, 8, 0.25, root); var dish = M(geo('dish', function () { return new T.SphereGeometry(0.5, 14, 6, 0, Math.PI * 2, 0, Math.PI / 3); }), lam('#e8ecf6'), 4, 8.2, -10, 3, 3, 3, root); dish.rotation.x = 2.3;
+    var blink = M(ball(1), basic('#ff3b3b'), 4, 8.2, -10, 0.3, 0.3, 0.3, root);
+    var ld = new T.Group(); ld.position.set(13, 0, -4.5); root.add(ld);
+    M(box(), lam('#d8b84a'), 0, 1.4, 0, 1.8, 1.0, 1.8, ld); M(cyl(8), lam('#c9ccd6'), 0, 2.3, 0, 1.4, 0.9, 1.4, ld); M(box(), basic('#2a3a5a'), 0, 2.35, 0.66, 0.5, 0.35, 0.1, ld);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { var l = M(cyl(5), lam('#9aa2b8'), q[0] * 1.1, 0.6, q[1] * 1.1, 0.1, 1.6, 0.1, ld); l.rotation.z = q[0] * 0.4; l.rotation.x = -q[1] * 0.4; M(cyl(8), lam('#9aa2b8'), q[0] * 1.4, 0.05, q[1] * 1.4, 0.5, 0.1, 0.5, ld); });
+    var flag = new T.Group(); flag.position.set(-12.8, 0, -2.6); root.add(flag); M(cyl(5), lam('#e0e0e0'), 0, 1.6, 0, 0.06, 3.2, 0.06, flag);
+    sign('GROK', 1.6, 0.9, '#ffffff', '#ff3d6e', flag, 0.82, 2.7, 0);
+    // earth + distant craters + hills
+    var earth = M(ball(3), lam('#2f7bff'), 16, 17, -60, 9, 9, 9, root); earth.material = new T.MeshLambertMaterial({ map: cv(256, 128, function (g, w, h) { g.fillStyle = '#2a6cf0'; g.fillRect(0, 0, w, h); g.fillStyle = '#3fbf5a'; for (var i = 0; i < 16; i++) { g.beginPath(); g.ellipse(Math.random() * w, 20 + Math.random() * (h - 40), 10 + Math.random() * 26, 6 + Math.random() * 14, Math.random() * 3, 0, 7); g.fill(); } g.fillStyle = 'rgba(255,255,255,0.7)'; for (i = 0; i < 12; i++) { g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 14 + Math.random() * 20, 3, 0, 0, 7); g.fill(); } }), emissive: '#0a1a40' });
+    M(ball(2), add('#6aa8ff'), 16, 17, -60.5, 10.2, 10.2, 10.2, root);
+    var hl = []; for (i = 0; i < 12; i++) hl.push([-60 + i * 11, 1.5, -40 - Math.random() * 10, 14, 3 + Math.random() * 4, 8]); instanced(ball(1), lam('#6c7088'), hl, root);
+    var cr = []; for (i = 0; i < 10; i++) { var cx = -16 + i * 3.6 + Math.random(), cz = -3.5 - Math.random() * 3; if (Math.abs(cx) < 11 && cz > -4) cz -= 2; cr.push([cx, 0.02, cz, 1.6 + Math.random(), 0.12, 1.2 + Math.random() * 0.6]); }
+    instanced(cyl(10), lam('#6e7286'), cr, root);
+    o.update = function (t) { blink.visible = Math.sin(t * 5) > 0; dish.rotation.z = Math.sin(t * 0.3) * 0.5; earth.rotation.y = t * 0.05; var gl = 0.6 + Math.sin(t * 2) * 0.4; edgeA.material.color.setRGB(0.35 * gl, 0.88 * gl, 1 * gl); };
+    return o;
+  }
+
+  /* ---------- GUMBALL FACTORY (reversing conveyor belt) ---------- */
+  function factory(root) {
+    var o = { sky: skyTex(['#ffe3f6', '#ffc0e6', '#ff9cd5', '#9fdcff']), fog: ['#ffc8ea', 30, 90], ambient: { type: 'sprinkles', color: '#ffffff' } };
+    root.add(lights(root, '#fff4fb', '#a05a8a', 1.0, '#ffffff', 0.7, -3, 11, 8));
+    var ft = cv(256, 256, function (g, w, h) { g.fillStyle = '#f7e2ef'; g.fillRect(0, 0, w, h); for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) if ((x + y) % 2) { g.fillStyle = '#ffd0e8'; g.fillRect(x * 32, y * 32, 32, 32); } });
+    floor(ft, root, 44, 18, [8, 3]);
+    // conveyor belt: scrolling rubber texture with chevrons, rollers + side rails
+    function beltCanvas(flip) {
+      var t = cv(256, 128, function (g, w, h) {
+        if (flip) { g.translate(w, 0); g.scale(-1, 1); }
+        g.fillStyle = '#3a3346'; g.fillRect(0, 0, w, h);
+        g.strokeStyle = '#2a2436'; g.lineWidth = 4; for (var x = 0; x < w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+        g.fillStyle = 'rgba(255,225,77,0.85)'; for (x = 0; x < w; x += 64) { g.beginPath(); g.moveTo(x + 14, 30); g.lineTo(x + 40, 64); g.lineTo(x + 14, 98); g.lineTo(x + 26, 98); g.lineTo(x + 52, 64); g.lineTo(x + 26, 30); g.fill(); }
+      });
+      t.wrapS = T.RepeatWrapping; t.repeat.set(9, 1); return t;
+    }
+    var beltTexR = beltCanvas(false), beltTexL = beltCanvas(true), beltTex = beltTexR;
+    var belt = new T.Mesh(plane(), new T.MeshLambertMaterial({ map: beltTex })); belt.rotation.x = -Math.PI / 2; belt.position.set(0, 0.015, 0.2); belt.scale.set(22, 2.6, 1); root.add(belt);
+    var railM = lam('#ff4fa8'); M(box(), railM, 0, 0.12, 1.58, 22.4, 0.24, 0.2, root); M(box(), railM, 0, 0.12, -1.18, 22.4, 0.24, 0.2, root);
+    var rl = []; for (var i = 0; i < 23; i++) rl.push([-11 + i, 0.1, 1.7, 0.16, 0.16, 0.16]); instanced(ball(0), basic('#ffffff'), rl, root, ['#ffe14d', '#5ad1ff', '#ff4fa8', '#7dff6a']);
+    [-11.4, 11.4].forEach(function (x) { M(cyl(14), lam('#c0c4d0'), x, 0.2, 0.2, 0.5, 2.9, 0.5, root).rotation.x = Math.PI / 2; M(box(), lam('#ff9ad0'), x, 0.6, 0.2, 0.7, 1.2, 3.2, root); });
+    // back wall with candy stripes
+    var wallTex = cv(256, 256, function (g, w, h) { for (var x = -h; x < w; x += 32) { g.fillStyle = (x / 32 | 0) % 2 ? '#ffffff' : '#ffb3da'; g.beginPath(); g.moveTo(x, h); g.lineTo(x + h, 0); g.lineTo(x + h + 32, 0); g.lineTo(x + 32, h); g.fill(); } });
+    wallTex.wrapS = wallTex.wrapT = T.RepeatWrapping; wallTex.repeat.set(6, 2);
+    M(box(), new T.MeshLambertMaterial({ map: wallTex }), 0, 5, -6, 44, 10, 0.4, root);
+    M(box(), lam('#ff4fa8'), 0, 10.2, -5.8, 44, 0.5, 0.6, root);
+    // big direction arrows on the wall (flash when the belt is about to reverse)
+    var arrowTex = cv(256, 128, function (g, w, h) { g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(20, 40); g.lineTo(150, 40); g.lineTo(150, 12); g.lineTo(236, 64); g.lineTo(150, 116); g.lineTo(150, 88); g.lineTo(20, 88); g.closePath(); g.fill(); });
+    var arrows = [];
+    [-7, 0, 7].forEach(function (x) {
+      var bg = M(box(), lam('#2a2436'), x, 3.7, -5.7, 3.4, 1.8, 0.15, root);
+      var a = new T.Mesh(plane(), new T.MeshBasicMaterial({ map: arrowTex, transparent: true, color: '#7dff6a' })); a.position.set(x, 3.7, -5.6); a.scale.set(2.9, 1.45, 1); root.add(a); arrows.push(a);
+    });
+    var warnSign = sign('BELT SWITCH!', 5.4, 1.1, '#ffe14d', '#2a2436', root, 0, 5.4, -5.55); warnSign.visible = false;
+    // giant gumball machine
+    var gm = new T.Group(); gm.position.set(-13, 0, -3.8); root.add(gm);
+    M(cyl(12), lam('#e8243c'), 0, 1.2, 0, 2.2, 2.4, 2.2, gm); M(box(), lam('#c0c4d0'), 0, 1.4, 1.1, 0.7, 0.5, 0.2, gm);
+    M(ball(2), new T.MeshLambertMaterial({ color: '#e8f6ff', transparent: true, opacity: 0.35 }), 0, 4.0, 0, 3.6, 3.6, 3.6, gm);
+    var balls = []; for (i = 0; i < 26; i++) { var a2 = Math.random() * 6.28, rr = Math.random() * 1.2, yy = 2.9 + Math.random() * 1.6; balls.push([Math.cos(a2) * rr, yy, Math.sin(a2) * rr, 0.55, 0.55, 0.55]); }
+    instanced(ball(1), lam('#ffffff'), balls, gm, ['#ff4fa8', '#ffe14d', '#5ad1ff', '#7dff6a', '#ff8a3d', '#b48cff']);
+    M(cyl(12), lam('#e8243c'), 0, 5.9, 0, 1.2, 0.5, 1.2, gm);
+    // pipes dropping gumballs + big lollipops
+    var pipeM = lam('#5ad1ff');
+    [[9, -4.4], [13, -3.6]].forEach(function (p) { M(cyl(10), pipeM, p[0], 6, p[1], 0.9, 12, 0.9, root); M(cyl(10), lam('#ffffff'), p[0], 2.2, p[1], 1.1, 0.3, 1.1, root); });
+    var drops = []; for (i = 0; i < 4; i++) { drops.push(M(ball(1), lam(['#ff4fa8', '#ffe14d', '#7dff6a', '#b48cff'][i]), 9, 2, -4.4, 0.6, 0.6, 0.6, root)); }
+    function lolly(x, z, c) { M(cyl(6), lam('#ffffff'), x, 2, z, 0.18, 4, 0.18, root); var d = M(cyl(20), lam(c), x, 4.6, z, 2, 0.3, 2, root); d.rotation.x = Math.PI / 2; M(cyl(20), basic('#ffffff'), x, 4.6, z + 0.17, 1.0, 0.02, 1.0, root).rotation.x = Math.PI / 2; }
+    lolly(-7, -5.2, '#ff4fa8'); lolly(5.5, -5.3, '#7dff6a');
+    sign('GUMBALL FACTORY', 9, 1.4, '#ff2b9a', null, root, 0, 9.3, -5.55);
+    var off = 0, lastT = 0, green = new T.Color('#7dff6a'), yellow = new T.Color('#ffe14d');
+    o.update = function (t, w) {
+      var dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+      var dir = w ? w.beltDir : 1, moving = !w || !w.inputLocked;
+      if (moving) off -= dir * dt * 1.25 / (22 / 9);
+      var want = dir > 0 ? beltTexR : beltTexL; if (belt.material.map !== want) { belt.material.map = want; belt.material.needsUpdate = true; } want.offset.x = off;
+      var warn = !!(w && w.beltWarn), flash = warn && Math.sin(t * 16) > 0;
+      arrows.forEach(function (a) { a.rotation.z = dir > 0 ? 0 : Math.PI; a.material.color.copy(warn ? yellow : green); a.visible = !flash; });
+      warnSign.visible = warn && Math.sin(t * 8) > -0.3;
+      drops.forEach(function (d, i) { var k = ((t * 0.6 + i / 4) % 1); d.position.y = 2.1 - k * 1.6; d.position.x = 9 + dir * k * 1.5; d.visible = k < 0.95; });
+    };
+    return o;
+  }
+
+  var BUILDERS = { rooftop: rooftop, vegas: vegas, dojo: dojo, volcano: volcano, hangar: hangar, moon: moon, factory: factory };
   A.HALF = 9.2; // stage half width (walls)
   A.build = function (id) {
     var root = new T.Group(); root.name = 'arena-' + id;

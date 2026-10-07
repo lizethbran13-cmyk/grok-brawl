@@ -122,7 +122,7 @@
   F.setAmbient = function (cfg) { ambient = cfg ? { cfg: cfg, acc: 0 } : null; };
   function ambientStep(dt, cx) {
     if (!ambient) return; var c = ambient.cfg; ambient.acc += dt;
-    var rate = { rain: 0.012, confetti: 0.05, petals: 0.07, embers: 0.03, dust: 0.08 }[c.type] || 0.1;
+    var rate = { rain: 0.012, confetti: 0.05, petals: 0.07, embers: 0.03, dust: 0.08, sprinkles: 0.06 }[c.type] || 0.1;
     while (ambient.acc > rate) {
       ambient.acc -= rate;
       var x = cx + (Math.random() - 0.5) * 26, z = -4 + Math.random() * 6;
@@ -130,6 +130,7 @@
       else if (c.type === 'confetti') emit(sysNorm, { x: x, y: 9, z: z, vy: -1.6, wob: 2, life: 5, size: 0.14, size1: 0.14, color: ['#ffd84d', '#ff4fd8', '#3ff0ff', '#ffffff'][(Math.random() * 4) | 0], alpha: 0.9 });
       else if (c.type === 'petals') emit(sysNorm, { x: x, y: 8, z: z, vx: 0.6, vy: -1.0, wob: 2.5, life: 7, size: 0.16, size1: 0.14, color: Math.random() < 0.5 ? '#ffb7d5' : '#ff8fc0', alpha: 0.95 });
       else if (c.type === 'embers') emit(sysAdd, { x: x, y: -0.5, z: z - 2, vx: (Math.random() - 0.5), vy: 1.5 + Math.random() * 2, wob: 1.5, life: 3, size: 0.12, size1: 0.02, color: Math.random() < 0.5 ? '#ff8a1a' : '#ffd040' });
+      else if (c.type === 'sprinkles') emit(sysNorm, { x: x, y: 9, z: z - 1, vy: -2.4, wob: 1.2, life: 4, size: 0.1, size1: 0.1, color: ['#ff4fa8', '#ffe14d', '#5ad1ff', '#7dff6a', '#ffffff'][(Math.random() * 5) | 0], alpha: 0.95 });
       else emit(sysAdd, { x: x, y: Math.random() * 6, z: z, vx: (Math.random() - 0.5) * 0.3, vy: 0.2, wob: 0.6, life: 4, size: 0.07, size1: 0.07, color: c.color, alpha: 0.5 });
     }
   }

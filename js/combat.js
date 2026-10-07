@@ -135,6 +135,41 @@
           if (m.landed && m.t >= m.landT + 14) end(f, w);
         },
         onLand: function (f, w, m) { if (m.t < 4 || m.landed) return; m.landed = true; m.landT = m.t; f.vx = 0; m.hitMask[0] = 9999; } };
+    },
+    // RIPTIDE: short lunge into a command grab (unblockable, ground only), spin and throw
+    whirlgrab: function () {
+      return { name: 'special', kind: 'special', total: 48, spinLock: true, anim: function (t, f, m) { return m.lockT == null ? (t < 8 ? 'windup' : 'grab') : (m.t - m.lockT < 22 ? 'spinthrow' : 'throw'); },
+        hits: [{ from: 9, to: 15, x0: 0.05, x1: 1.45, y0: 0.2, y1: 2.0, dmg: 0, lock: true, groundOnly: true }],
+        onFrame: function (f, w, m, opp) {
+          if (m.lockT == null) { if (m.t >= 6 && m.t <= 14) f.vx = f.facing * 5.5; else f.vx *= 0.7; return; }
+          f.vx = 0; var k = m.t - m.lockT, lim = w.half - 0.1, reach = 1.05 * Math.max(f.sc, opp.sc);
+          if (opp.ko) { if (k >= 40) end(f, w); return; }
+          if (k < 22) {
+            var ang = k * 0.3;
+            opp.x = Math.max(-lim, Math.min(lim, f.x + f.facing * Math.cos(ang) * reach)); opp.y = 0.3 + Math.abs(Math.sin(ang)) * 0.45;
+            opp.vx = 0; opp.vy = 0; opp.state = 'locked'; opp.st = 0;
+          }
+          if (k === 22) {
+            opp.x = Math.max(-lim, Math.min(lim, f.x + f.facing * reach)); opp.y = 0.3; opp.state = 'hit';
+            resolveHit(f, opp, { dmg: 80, hs: 24, launch: [7, 8.5], unblockable: true, heavy: true, x: opp.x, y: 1.2, src: f.x }, w);
+            w.emit('slam', { f: f, x: opp.x, big: false });
+          }
+          if (k >= 38) end(f, w);
+        },
+        onConnect: function (f, w, m, opp, h) { if (h.lock && m.lockT == null) { m.lockT = m.t; m.def.total = 999; m.def.invuln = [1, 999]; f.vx = 0; w.emit('grab', { f: f, opp: opp }); } } };
+    },
+    // GLITCH: tosses a pixel mine that arms on the floor and pops when a grounded foe steps on it
+    pixelmine: function () {
+      var TOSS = 18;
+      return { name: 'special', kind: 'special', total: 34, anim: function (t) { return t < 8 ? 'windup' : 'throw'; }, proj: 10,
+        onFrame: function (f, w, m) {
+          if (m.t !== 10) return;
+          w.projs = w.projs.filter(function (p) { return !(p.owner === f && p.kind === 'mine'); });
+          var lim = w.half - 0.4, sx = f.x + f.facing * 0.7 * f.sc, tx = Math.max(-lim, Math.min(lim, f.x + f.facing * 3.1));
+          var p = { kind: 'mine', owner: f, x: sx, y: 0, vx: (tx - sx) / TOSS * 60, r: 0.42, h: 1.1, ground: true, mine: true, toss: TOSS, arm: 40,
+            dmg: 75, hs: 22, bs: 14, kb: 2, chip: 6, life: 330, color: '#9dff00', launch: [3, 9], t: 0 };
+          w.projs.push(p); w.emit('proj', { f: f, p: p });
+        } };
     }
   };
 
@@ -188,6 +223,33 @@
           if (k >= 70) end(f, w);
         },
         onConnect: function (f, w, m, opp, h) { if (h.lock && m.lockT == null) { m.lockT = m.t; m.def.total = 999; m.def.invuln = [1, 999]; f.vx = 0; w.superCam(76); w.emit('lock', { f: f, opp: opp }); } } };
+    },
+    // RIPTIDE: whirlpool pulls grounded foes in (jump / dash to escape), then a blockable geyser erupts
+    maelstrom: function () {
+      return { name: 'super', kind: 'super', total: 84, invuln: [1, 24], vortex: [12, 50], anim: function (t) { return t < 12 ? 'charge' : t < 50 ? 'summon' : 'slamDown'; },
+        onFrame: function (f, w, m) {
+          var foes = w.f.filter(function (o) { return o !== f && !o.ko; });
+          if (m.t === 12) w.emit('vortex', { f: f, x: f.x });
+          if (m.t >= 12 && m.t < 50) foes.forEach(function (o) {
+            if (o.y > 0.05 || o.state === 'dash' || o.state === 'down' || o.state === 'getup' || o.state === 'locked' || o.hidden) return;
+            var d = f.x - o.x, ad = Math.abs(d); if (ad > 1.0 && ad < 8) o.x += Math.sign(d) * Math.min(ad - 1.0, 0.095);
+          });
+          if (m.t === 50) {
+            w.emit('geyser', { f: f, x: f.x }); var any = false;
+            foes.forEach(function (o) { if (Math.abs(o.x - f.x) < 2.5 * f.sc && o.y < 3) { if (resolveHit(f, o, { dmg: 200, hs: 30, bs: 24, chip: 34, launch: [3, 13], heavy: true, sup: true, x: o.x, y: 1.2, src: f.x }, w) === 'hit') any = true; } });
+            if (any) w.superCam(55);
+          }
+        } };
+    },
+    // GLITCH: six giant pixels drop on the foe's spot, each with a short floor warning
+    pixelstorm: function () {
+      return { name: 'super', kind: 'super', total: 70, invuln: [1, 30], anim: function (t) { return t < 12 ? 'charge' : 'summon'; },
+        onFrame: function (f, w, m, opp) {
+          if (m.t < 12 || m.t > 52 || (m.t - 12) % 8 !== 0 || !opp || opp.ko) return;
+          var k = (m.t - 12) / 8, lim = w.half - 0.3, last = k === 5;
+          w.hz.push({ kind: 'pixel', owner: f, x: Math.max(-lim, Math.min(lim, opp.x)), t: 0, warn: 16, r: 0.8, y1: 3, dmg: last ? 62 : 38, hs: 24, bs: 14, chip: 5, kb: 0.2, launch: last ? [3, 10] : null, sup: true, last: last });
+          w.emit('pixelCall', { f: f, n: k });
+        } };
     }
   };
   C.specialName = function (def) { return def.special.name; };
@@ -219,15 +281,15 @@
       def.state = 'bstun'; def.st = 0; def.stun = h.bs || 10; def.vx = dir * (h.kb ? 2.4 + h.kb * 0.4 : 2.6) * 0.9;
       def.guard -= (h.dmg || 20) * 0.32; att.meter = Math.min(100, att.meter + (h.dmg || 20) * 0.06); def.meter = Math.min(100, def.meter + (h.dmg || 20) * 0.1);
       def.stats.blocks++;
-      if (Math.abs(def.x) > w.half - 0.5 && !h.projDir) att.vx = -dir * 2.5;
+      if (Math.abs(def.x) > w.half - 0.5 && !h.projDir && !h.noPush) att.vx = -dir * 2.5;
       if (def.guard <= 0) { def.guard = 100; def.state = 'dizzy'; def.st = 0; def.stun = 50; w.emit('guardbreak', { f: def }); }
       w.freeze = Math.max(w.freeze, 4);
       w.emit('block', { att: att, def: def, x: def.x - dir * 0.3, y: h.y || def.y + 1.4 });
       return 'block';
     }
-    var scale = Math.max(h.sup ? 0.6 : 0.35, 1 - 0.1 * def.combo);
+    var scale = h.env ? 1 : Math.max(h.sup ? 0.6 : 0.35, 1 - 0.1 * def.combo);
     var dmg = Math.max(1, Math.round((h.dmg || 0) * att.dmgMul * scale));
-    def.hp -= dmg; def.combo++; att.stats.hits++; att.stats.dmg += dmg; att.stats.maxCombo = Math.max(att.stats.maxCombo, def.combo);
+    def.hp -= dmg; if (!h.env) def.combo++; att.stats.hits++; att.stats.dmg += dmg; att.stats.maxCombo = Math.max(att.stats.maxCombo, def.combo);
     att.meter = Math.min(100, att.meter + dmg * (h.sup ? 0 : 0.12)); def.meter = Math.min(100, def.meter + dmg * 0.085);
     def.flash = 5; def.lastHitBy = att; def.move = null; def.hidden = false; def.grav = 1;
     if (h.freeze) def.frozen = 40;
@@ -246,7 +308,7 @@
     } else {
       def.state = 'hit'; def.st = 0; def.stun = Math.max(9, (h.hs || 16) - Math.max(0, def.combo - 3) * 1.5); def.vx = dir * (1.6 + (h.kb || 0) * 1.4) * def.kbMul;
     }
-    if (Math.abs(def.x) > w.half - 0.5 && !h.projDir && !h.lockHit) att.vx = -dir * (1.5 + (h.kb || 0));
+    if (Math.abs(def.x) > w.half - 0.5 && !h.projDir && !h.lockHit && !h.noPush) att.vx = -dir * (1.5 + (h.kb || 0));
     if (!h.noFreeze) w.freeze = Math.max(w.freeze, Math.min(13, 4 + Math.round(dmg / 9)));
     w.emit('hit', { att: att, def: def, dmg: dmg, x: h.x != null ? h.x : def.x - dir * 0.3, y: h.y != null ? h.y : def.y + 1.4, heavy: !!h.heavy || dmg >= 60, sup: !!h.sup, combo: def.combo, dir: dir, launch: !!launch });
     return 'hit';
@@ -271,7 +333,7 @@
       if (bx1 < hb.x0 || bx0 > hb.x1 || by1 < hb.y0 || by0 > hb.y1) return;
       var hh = {}; for (var k in h) hh[k] = h[k];
       hh.x = Math.max(hb.x0, Math.min(hb.x1, f.x + f.facing * h.x1 * sc * 0.85)); hh.y = Math.max(hb.y0 + 0.3, Math.min(hb.y1 - 0.2, (by0 + by1) / 2));
-      if (h.lock) { if (opp.invuln > 0 || opp.state === 'down' || opp.state === 'getup' || opp.state === 'ko') return; m.hitMask[i] = m.t; m.connected = true; opp.tgt = f; if (m.def.onConnect) m.def.onConnect(f, w, m, opp, h); return; }
+      if (h.lock) { if (opp.invuln > 0 || opp.state === 'down' || opp.state === 'getup' || opp.state === 'ko' || opp.hidden) return; if (h.groundOnly && (opp.y > 0.3 || opp.state === 'launched' || opp.state === 'locked')) return; m.hitMask[i] = m.t; m.connected = true; opp.tgt = f; if (m.def.onConnect) m.def.onConnect(f, w, m, opp, h); return; }
       var r = resolveHit(f, opp, hh, w);
       if (r) { m.hitMask[i] = m.t; m.hitCount++; m.connected = true; if (m.def.onConnect) m.def.onConnect(f, w, m, opp, h); }
     });
@@ -400,7 +462,7 @@
     if (f.state === 'locked') return;
     var air = f.y > 0 || f.vy > 0;
     if (air) {
-      var jg = f.state === 'air' || (f.state === 'atk' && f.move && f.move.def.air) ? (f.vy > 0 ? JUMP_RISE_G : JUMP_FALL_G) : 1;
+      var jg = f.state === 'air' || (f.state === 'atk' && f.move && f.move.def.air) ? (f.vy > 0 ? JUMP_RISE_G : JUMP_FALL_G) * (w.lowGrav || 1) : 1;
       f.vy -= GRAV * f.grav * DT * (f.state === 'launched' ? 0.92 : 1) * jg;
       f.y += f.vy * DT; f.x += f.vx * DT;
       if (f.y <= 0) {
@@ -417,6 +479,7 @@
       if (f.state === 'launched') { f.state = f.ko ? 'ko' : 'down'; f.st = 0; }
       f.jumps = 0;
     }
+    if (w.belt && f.y <= 0.0001) f.x += w.belt * DT; // conveyor belt only moves fighters standing on it
     var lim = w.half - 0.1;
     if (f.x < -lim) { f.x = -lim; if (f.vx < 0) f.vx = 0; }
     if (f.x > lim) { f.x = lim; if (f.vx > 0) f.vx = 0; }
@@ -441,14 +504,21 @@
   function stepProjectiles(w) {
     var dead = [];
     w.projs.forEach(function (p) {
-      p.t++; p.life--; p.x += p.vx * DT;
+      p.t++; p.life--;
+      if (p.mine) {
+        if (p.t >= p.toss) { p.vx = 0; if (w.belt) p.x = Math.max(-w.half + 0.2, Math.min(w.half - 0.2, p.x + w.belt * DT)); }
+        if (p.life <= 0) { dead.push(p); w.emit('mineFizzle', { p: p }); return; }
+      }
+      p.x += p.vx * DT;
       if (p.life <= 0 || Math.abs(p.x) > w.half + 3) { dead.push(p); return; }
+      if (p.mine && p.t < p.arm) return;
       var py0 = p.ground ? 0 : p.y - p.r, py1 = p.ground ? p.h : p.y + p.r;
       var targets = w.f.length === 2 ? [w.f[0] === p.owner ? w.f[1] : w.f[0]] : w.f.filter(function (o) { return o !== p.owner; });
       for (var ti = 0; ti < targets.length; ti++) {
         var opp = targets[ti], hb = hurt(opp);
         if (p.x + p.r > hb.x0 && p.x - p.r < hb.x1 && py1 > hb.y0 && py0 < hb.y1) {
-          var r = resolveHit(p.owner, opp, { dmg: p.dmg, hs: p.hs, bs: p.bs, kb: p.kb, chip: p.chip, projDir: p.vx, x: p.x, y: p.ground ? 0.6 : p.y, freeze: p.freeze, heavy: p.dmg >= 80 }, w);
+          var r = resolveHit(p.owner, opp, p.mine ? { dmg: p.dmg, hs: p.hs, bs: p.bs, kb: p.kb, chip: p.chip, src: p.x, noPush: true, launch: p.launch, x: p.x, y: 0.6, heavy: true }
+            : { dmg: p.dmg, hs: p.hs, bs: p.bs, kb: p.kb, chip: p.chip, projDir: p.vx, x: p.x, y: p.ground ? 0.6 : p.y, freeze: p.freeze, heavy: p.dmg >= 80 }, w);
           if (r) { dead.push(p); w.emit('projHit', { p: p, blocked: r === 'block' }); break; }
         }
       }
@@ -463,17 +533,68 @@
     if (dead.length) w.projs = w.projs.filter(function (p) { return dead.indexOf(p) < 0; });
   }
 
+  /* ---------- hazards (meteors, pixel drops) + arena rules (low gravity, conveyor) ---------- */
+  function envAttacker(w) {
+    return w.env || (w.env = { id: 'env', def: { id: 'env', name: 'ARENA', color: '#ff8a3d' }, side: -1, x: 0, vx: 0, facing: 1, sc: 1, dmgMul: 1, meter: 0, move: null,
+      stats: { hits: 0, blocks: 0, specials: 0, supers: 0, maxCombo: 0, dmg: 0 } });
+  }
+  function hzRand(w) { w.hzSeed = (w.hzSeed * 16807) % 2147483647; return (w.hzSeed - 1) / 2147483646; }
+  function stepHazards(w) {
+    if (!w.hz.length) return;
+    w.hz.forEach(function (h) {
+      h.t++;
+      if (h.t !== h.warn) return;
+      var hitAny = false;
+      w.f.forEach(function (o) {
+        if (o === h.owner || o.ko) return;
+        var hb = hurt(o); if (h.x + h.r < hb.x0 || h.x - h.r > hb.x1 || hb.y0 > h.y1) return;
+        var att = h.owner || envAttacker(w);
+        var r = resolveHit(att, o, { dmg: h.dmg, hs: h.hs, bs: h.bs, chip: h.chip, kb: h.kb || 0.3, launch: h.launch, sup: !!h.sup, env: !h.owner, src: h.x, noPush: true, x: o.x, y: o.y + 1.1, heavy: !!h.last || h.kind === 'meteor' }, w);
+        if (r === 'hit') hitAny = true;
+      });
+      if (hitAny && h.last) w.superCam(30);
+      w.emit('hzStrike', { h: h, hit: hitAny });
+    });
+    w.hz = w.hz.filter(function (h) { return h.t < h.warn + 14; });
+  }
+  function stepArena(w) {
+    var r = w.rules; w.belt = 0;
+    if (!r || w.inputLocked) return;
+    w.arenaT++;
+    if (r.meteors && !w.training && w.arenaT >= w.nextMeteor) {
+      var alive = w.f.filter(function (o) { return !o.ko; });
+      if (alive.length) {
+        var tg = alive[w.meteorN % alive.length], lim = w.half - 0.6;
+        w.hz.push({ kind: 'meteor', owner: null, x: Math.max(-lim, Math.min(lim, tg.x)), t: 0, warn: 80, r: 1.05, y1: 3.2, dmg: 65, hs: 20, bs: 14, chip: 6, kb: 0.3, launch: [2.5, 8.5] });
+        w.emit('meteorWarn', { x: tg.x });
+      }
+      w.meteorN++; w.nextMeteor = w.arenaT + 420 + Math.floor(hzRand(w) * 240);
+    }
+    if (r.belt) {
+      var PER = 600, ph = w.arenaT % PER;
+      if (ph === 0) { w.beltDir = -w.beltDir; w.emit('beltSwitch', { dir: w.beltDir }); }
+      if (ph === PER - 120) w.emit('beltWarn', {});
+      w.beltWarn = ph >= PER - 120; w.belt = r.belt * w.beltDir;
+    }
+  }
+  C.stepHazards = stepHazards;
+
   /* ---------- world ---------- */
   C.makeWorld = function (f0, f1, opts) {
     opts = opts || {};
-    var w = { f: [f0, f1], projs: [], beams: [], half: opts.half || 9.2, freeze: 0, frame: 0, inputLocked: true, training: opts.training || null,
-      cine: null, superCamT: 0, listeners: [] };
+    var rules = opts.rules || null;
+    var w = { f: [f0, f1], projs: [], beams: [], hz: [], half: (rules && rules.half) || opts.half || 9.2, freeze: 0, frame: 0, inputLocked: true, training: opts.training || null,
+      cine: null, superCamT: 0, listeners: [], rules: rules, lowGrav: (rules && rules.lowGrav) || 0, belt: 0, beltDir: 1, beltWarn: false, arenaT: 0, round: 0, hzSeed: 12345, nextMeteor: 330, meteorN: 0 };
     w.emit = function (type, data) { for (var i = 0; i < w.listeners.length; i++) w.listeners[i](type, data); };
     w.cinematic = function (f) { w.cine = { f: f, t: 0, dur: 52 }; w.emit('superStart', { f: f }); };
     w.superCam = function (n) { w.superCamT = Math.max(w.superCamT, n); w.emit('superHit', {}); };
     return w;
   };
-  C.resetWorld = function (w) { w.projs = []; w.beams = []; w.freeze = 0; w.cine = null; w.superCamT = 0; };
+  C.resetWorld = function (w) {
+    w.projs = []; w.beams = []; w.hz = []; w.freeze = 0; w.cine = null; w.superCamT = 0;
+    w.round = (w.round || 0) + 1; w.arenaT = 0; w.belt = 0; w.beltWarn = false; w.beltDir = w.round % 2 ? 1 : -1;
+    w.hzSeed = 12345 + w.round * 7919; w.nextMeteor = 330; w.meteorN = w.round;
+  };
 
   // free-for-all: each fighter fights the nearest opponent still standing (kept while attacking / grabbed)
   function target(f, w) {
@@ -492,13 +613,14 @@
     if (w.freeze > 0) { w.freeze--; return 'freeze'; }
     if (w.superCamT > 0) w.superCamT--;
     for (i = 0; i < n; i++) tickBuf(fs[i]);
+    stepArena(w);
     var T = fs.map(function (f) { return target(f, w); });
     for (i = 0; i < n; i++) fs[i].tgt = T[i];
     for (i = 0; i < n; i++) stepFighter(fs[i], T[i], w);
     for (i = 0; i < n; i++) physics(fs[i], T[i], w);
     for (i = 0; i < n; i++) for (j = i + 1; j < n; j++) separate(fs[i], fs[j], w);
     for (i = 0; i < n; i++) if (fs[i].state === 'atk') for (j = 0; j < n; j++) if (j !== i && fs[i].state === 'atk') checkMoveHits(fs[i], fs[j], w, true);
-    stepProjectiles(w);
+    stepProjectiles(w); stepHazards(w);
     w.beams = w.beams.filter(function (bm) { bm.t++; if (bm.owner.state !== 'atk') bm.t = Math.max(bm.t, bm.dur - 6); return bm.t < bm.dur; });
     for (i = 0; i < n; i++) { var f = fs[i], o = T[i]; if ((f.state === 'land' || f.state === 'bstun' && f.st === 1) && Math.abs(o.x - f.x) > 0.05) f.facing = Math.sign(o.x - f.x); }
     return 'run';
@@ -512,13 +634,14 @@
     if (w.freeze > 0) { w.freeze--; return 'freeze'; }
     if (w.superCamT > 0) w.superCamT--;
     tickBuf(a); tickBuf(b);
+    stepArena(w);
     // restore buffered presses that happened this very frame (tickBuf ran after readInput)
     stepFighter(a, b, w); stepFighter(b, a, w);
     physics(a, b, w); physics(b, a, w);
     separate(a, b, w);
     if (a.state === 'atk') checkMoveHits(a, b, w);
     if (b.state === 'atk') checkMoveHits(b, a, w);
-    stepProjectiles(w);
+    stepProjectiles(w); stepHazards(w);
     w.beams = w.beams.filter(function (bm) { bm.t++; if (bm.owner.state !== 'atk') bm.t = Math.max(bm.t, bm.dur - 6); return bm.t < bm.dur; });
     // auto face when landing etc.
     [a, b].forEach(function (f) { var o = f === a ? b : a; if ((f.state === 'land' || f.state === 'bstun' && f.st === 1) && Math.abs(o.x - f.x) > 0.05) f.facing = Math.sign(o.x - f.x); });

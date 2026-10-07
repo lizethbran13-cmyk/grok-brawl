@@ -33,6 +33,16 @@ window.GB = window.GB || {};
       special: { type: 'cyclone', name: 'Cyclone Kick', desc: 'A rising spinning kick. Great anti-air, briefly invincible.' },
       super: { type: 'rush', name: 'PETAL STORM', desc: 'A whirlwind of kicks and cherry blossoms.' },
       bio: 'Acrobatic kicker. Swat jumpers out of the sky.' },
+    { id: 'riptide', name: 'RIPTIDE', title: 'Tidal Wrestler', color: '#14b8a6', color2: '#ff7f50', rim: '#7ff5e6',
+      stats: { speed: 2, power: 4, weight: 3 }, scale: 1.1,
+      special: { type: 'whirlgrab', name: 'Whirlpool Grab', desc: 'Lunges in, grabs and spin-throws the foe. Beats blocking! Jump, dash or jab to stop it.' },
+      super: { type: 'maelstrom', name: 'MAELSTROM', desc: 'A whirlpool drags foes in, then a giant geyser erupts. Jump or dash away to escape the pull.' },
+      bio: 'Big wrestler from the deep. Get close and grab anyone who hides behind a block.' },
+    { id: 'glitch', name: 'GLITCH', title: 'Pixel Hacker', color: '#9dff00', color2: '#ff2bd6', rim: '#d4ff6a',
+      stats: { speed: 4, power: 3, weight: 2 }, scale: 0.94,
+      special: { type: 'pixelmine', name: 'Glitch Mine', desc: 'Tosses a pixel mine onto the floor. It blinks, then explodes when a foe steps on it. Jump over it!' },
+      super: { type: 'pixelstorm', name: 'PIXEL STORM', desc: 'Giant pixels rain down where the foe stands. Watch for the green squares and dash away.' },
+      bio: 'Tricky trap-setter with a TV for a head. Lay mines, then make them dodge.' },
     { id: 'prime', name: 'GROK PRIME', title: 'Final Boss', color: '#ffc531', color2: '#1b1b2a', rim: '#ffd84d',
       stats: { speed: 4, power: 4, weight: 4 }, scale: 1.1, hidden: true,
       special: { type: 'voidorb', name: 'Void Orb', desc: 'Launches a heavy orb of dark energy.' },
@@ -45,7 +55,11 @@ window.GB = window.GB || {};
     { id: 'vegas', name: 'Vegas Strip', sub: 'Lights, slots, glory', css: 'linear-gradient(180deg,#2a0a4a 0%,#ff5f6d 60%,#ffc371 100%)', music: 1 },
     { id: 'dojo', name: 'Tokyo Dojo', sub: 'Cherry blossom season', css: 'linear-gradient(180deg,#ffd6e8 0%,#f7a8c4 45%,#8b5a2b 100%)', music: 2 },
     { id: 'volcano', name: 'Volcano', sub: 'Do not fall in', css: 'linear-gradient(180deg,#1a0505 0%,#7a1408 55%,#ff7a00 100%)', music: 3 },
-    { id: 'hangar', name: 'Area 51 Hangar', sub: 'Top secret', css: 'linear-gradient(180deg,#0f1a14 0%,#2c4a3a 55%,#7dff9e 100%)', music: 4 }
+    { id: 'hangar', name: 'Area 51 Hangar', sub: 'Top secret', css: 'linear-gradient(180deg,#0f1a14 0%,#2c4a3a 55%,#7dff9e 100%)', music: 4 },
+    { id: 'moon', name: 'Moon Base', sub: 'Low gravity \u00b7 dodge the meteors!', css: 'linear-gradient(180deg,#000008 0%,#1c2350 55%,#9aa6c8 100%)', music: 6,
+      rules: { half: 10.4, lowGrav: 0.74, meteors: true } },
+    { id: 'factory', name: 'Gumball Factory', sub: 'The conveyor belt keeps switching!', css: 'linear-gradient(180deg,#ffd1f0 0%,#ff7ac8 50%,#5ad1ff 100%)', music: 7,
+      rules: { belt: 1.25 } }
   ];
 
   // CPU difficulty knobs (interpolated for the arcade boss)

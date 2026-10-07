@@ -8,7 +8,7 @@
   var rigs = [null, null], plates = [null, null], F = [null, null], ais = [null, null], world = null, match = null;
   var time = 0, acc = 0, slowT = 0, shake = 0, manual = false, paused = false, fast = false, lastT = 0, preview = null;
   var cam = { x: 0, y: 2.4, z: 11, lx: 0, ly: 1.3 };
-  var projVis = [], beamVis = [], hudCache = {};
+  var projVis = [], beamVis = [], hzVis = [], hudCache = {};
   var $ = function (id) { return document.getElementById(id); };
   G.onMatchEnd = null; G.onRoundStart = null;
 
@@ -39,11 +39,23 @@
   function haloTex() { var c = document.createElement('canvas'); c.width = c.height = 64; var g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 2, 32, 32, 31); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.4, 'rgba(255,255,255,0.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); }
   function initVis() {
     var ht = haloTex(), cg = new T.IcosahedronGeometry(0.5, 1);
-    for (var i = 0; i < 4; i++) {
+    var cubeG = new T.BoxGeometry(1, 1, 1);
+    for (var i = 0; i < 6; i++) {
       var grp = new T.Group(); grp.visible = false;
       var core = new T.Mesh(cg, new T.MeshBasicMaterial({ color: '#fff' })); grp.add(core);
+      var cube = new T.Mesh(cubeG, new T.MeshLambertMaterial({ color: '#9dff00', emissive: '#2a5a00' })); cube.visible = false; grp.add(cube);
       var halo = new T.Sprite(new T.SpriteMaterial({ map: ht, color: '#ff7a1a', transparent: true, depthWrite: false, blending: T.AdditiveBlending })); halo.scale.set(2, 2, 1); grp.add(halo);
-      scene.add(grp); projVis.push({ g: grp, core: core, halo: halo, p: null });
+      scene.add(grp); projVis.push({ g: grp, core: core, cube: cube, halo: halo, p: null });
+    }
+    var ringG = new T.RingGeometry(0.72, 1, 36), discG = new T.CircleGeometry(1, 36), colG = new T.CylinderGeometry(1, 1, 1, 18, 1, true), rockG = new T.DodecahedronGeometry(0.5, 0);
+    for (i = 0; i < 8; i++) {
+      var hg = new T.Group(); hg.visible = false;
+      var ring = new T.Mesh(ringG, new T.MeshBasicMaterial({ color: '#ff4a2e', transparent: true, depthWrite: false, side: T.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; hg.add(ring);
+      var disc = new T.Mesh(discG, new T.MeshBasicMaterial({ color: '#ff4a2e', transparent: true, opacity: 0.3, depthWrite: false, side: T.DoubleSide })); disc.rotation.x = -Math.PI / 2; disc.position.y = 0.04; hg.add(disc);
+      var col = new T.Mesh(colG, new T.MeshBasicMaterial({ color: '#ff4a2e', transparent: true, opacity: 0.12, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide })); col.position.y = 4; col.scale.set(1, 8, 1); hg.add(col);
+      var rock = new T.Mesh(rockG, new T.MeshLambertMaterial({ color: '#7a4a2a', emissive: '#ff4a00', emissiveIntensity: 0.6 })); rock.visible = false; scene.add(rock);
+      var pix = new T.Mesh(cubeG, new T.MeshLambertMaterial({ color: '#9dff00', emissive: '#3a7a00' })); pix.visible = false; scene.add(pix);
+      scene.add(hg); hzVis.push({ g: hg, ring: ring, disc: disc, col: col, rock: rock, pix: pix });
     }
     var bg = new T.CylinderGeometry(0.5, 0.5, 1, 14, 1, true); bg.rotateZ(Math.PI / 2);
     for (i = 0; i < 2; i++) {
@@ -59,9 +71,18 @@
     projs.forEach(function (p) {
       var v = projVis.find(function (q) { return q.p === p; });
       if (!v) { v = projVis.find(function (q) { return !q.p; }); if (!v) return; v.p = p; v.g.visible = true;
-        var col = p.kind === 'void' ? '#b04aff' : p.kind === 'ice' ? '#9fe8ff' : '#ff7a1a';
+        var col = p.kind === 'void' ? '#b04aff' : p.kind === 'ice' ? '#9fe8ff' : p.kind === 'mine' ? '#ff2bd6' : '#ff7a1a';
         v.core.material.color.set(p.kind === 'void' ? '#2a0a4a' : p.kind === 'ice' ? '#e8fbff' : '#fff2a0'); v.halo.material.color.set(col);
         var s = p.r * 2; v.core.scale.setScalar(s); v.halo.scale.set(s * 3, s * 3, 1);
+        v.core.visible = p.kind !== 'mine'; v.cube.visible = p.kind === 'mine'; v.cube.scale.setScalar(0.5); v.cube.rotation.set(0, 0, 0);
+      }
+      if (p.kind === 'mine') {
+        var k = Math.min(1, p.t / p.toss), armed = p.t >= p.arm, my = p.t < p.toss ? 0.3 + Math.sin(k * Math.PI) * 1.5 : 0.3;
+        v.g.position.set(p.x, my, 0.1);
+        if (p.t < p.toss) { v.cube.rotation.x += dt * 10; v.cube.rotation.z += dt * 7; } else { v.cube.rotation.set(0, Math.sin(time * 2) * 0.3, 0); }
+        var blink = armed ? (Math.sin(time * (p.life < 90 ? 26 : 12)) > 0) : false;
+        v.cube.material.color.set(blink ? '#ff2bd6' : '#9dff00'); v.halo.material.opacity = armed ? (blink ? 1 : 0.35) : 0.25; v.halo.scale.set(1.5, 1.5, 1);
+        return;
       }
       var y = p.ground ? 0.45 : p.y;
       v.g.position.set(p.x, y, 0.1); v.core.rotation.x += dt * 8; v.core.rotation.y += dt * 6;
@@ -70,6 +91,27 @@
         else if (p.kind === 'void') { FX.trail(p.x, y, Math.random() < 0.5 ? '#b04aff' : '#ff6be6', 0.7, 0.5); }
         else { if (p.t % 3 === 0 && !p._sp) { FX.spike(p.x, 1.1, 0.35); } FX.trail(p.x, 0.3, '#bff4ff', 0.35, 0.6); }
       }
+    });
+    var hz = world && world.hz ? world.hz : [];
+    hzVis.forEach(function (v, i) {
+      var h = hz[i]; if (!h) { v.g.visible = false; v.rock.visible = false; v.pix.visible = false; return; }
+      var met = h.kind === 'meteor', col = met ? '#ff4a2e' : '#9dff00', left = h.warn - h.t, striking = left <= 0;
+      v.g.visible = true; v.g.position.set(h.x, 0, 0);
+      v.ring.material.color.set(col); v.disc.material.color.set(col); v.col.material.color.set(col);
+      v.ring.scale.setScalar(h.r * (striking ? 1 - left * 0.09 : 1)); v.ring.material.opacity = striking ? Math.max(0, 1 + left / 14) : 0.55 + 0.45 * Math.sin(time * (left < 30 ? 30 : 14));
+      v.disc.scale.setScalar(h.r * Math.min(1, h.t / h.warn)); v.disc.visible = !striking; v.disc.material.opacity = 0.38;
+      v.col.visible = met && !striking; v.col.scale.set(h.r * 0.9, 8, h.r * 0.9); v.col.material.opacity = 0.14 + 0.1 * Math.sin(time * 12);
+      var FALL = met ? 24 : 12, falling = left <= FALL && !striking, body = met ? v.rock : v.pix;
+      v.rock.visible = met && falling; v.pix.visible = !met && falling;
+      if (falling) {
+        var fy = 0.5 + left / FALL * (met ? 14 : 7);
+        if (met) { body.position.set(h.x - left * 0.18, fy, 0); body.scale.setScalar(1.3); body.rotation.x += dt * 6; body.rotation.y += dt * 4; if (!fast) { FX.trail(body.position.x, fy + 0.4, Math.random() < 0.5 ? '#ff7a1a' : '#ffe14d', 0.8, 0.5); } }
+        else { body.position.set(h.x, fy, 0); body.scale.setScalar(1.3); body.rotation.set(0, time * 3, 0); body.material.color.set(h.last ? '#ff2bd6' : '#9dff00'); }
+      }
+    });
+    if (world && !fast) world.f.forEach(function (f) {
+      var mv = f.move; if (f.state !== 'atk' || !mv || !mv.def.vortex || mv.t < mv.def.vortex[0] || mv.t >= mv.def.vortex[1]) return;
+      for (var q = 0; q < 3; q++) { var a = time * 9 + q * 2.1, rr = 1.2 + ((time * 3 + q) % 1) * 4.5; FX.trail(f.x + Math.cos(a) * rr, 0.25 + Math.random() * 0.6, q % 2 ? '#7ff5e6' : '#ffffff', 0.5, 0.3); }
     });
     var beams = world ? world.beams : [];
     beamVis.forEach(function (v, i) {
@@ -108,7 +150,7 @@
     r.root.position.set(f.x, f.y, 0);
     var want = f.state === 'win' ? 0 : faceAngle(f), cur = r.root.rotation.y; r.root.rotation.y = cur + (want - cur) * 0.35;
     r.root.visible = !f.hidden;
-    var spin = f.state === 'atk' && f.move && f.move.def.spin && f.move.t > 3 && !f.move.landed;
+    var spin = f.state === 'atk' && f.move && ((f.move.def.spin && f.move.t > 3 && !f.move.landed) || (f.move.def.spinLock && f.move.lockT != null && f.move.t - f.move.lockT < 22));
     r.body.rotation.y = spin ? r.body.rotation.y + 0.55 : 0;
     // double jump = front flip around the hips, triple jump = a full twirl
     var fl = f.state === 'air' && f.jumpN >= 2 && f.jumpT < 22 ? f.jumpT / 22 : -1;
@@ -145,7 +187,7 @@
     F[0].meter = 0; F[1].meter = 0;
     if (d2) { F[2] = C.makeFighter(d2, 2); F[2].meter = 0; F.forEach(function (f) { f.ffa = true; }); }
     var training = cfg.mode === 'training' ? { dummy: 'stand', meter: true } : null;
-    world = C.makeWorld(F[0], F[1], { half: GB.Arenas.HALF, training: training });
+    world = C.makeWorld(F[0], F[1], { half: GB.Arenas.HALF, training: training, rules: GB.arena(cfg.arena).rules || null });
     if (d2) world.f = F.slice();
     world.listeners.push(onEvent);
     var tags = cfg.mode === 'demo' ? null : cfg.names ? cfg.names.slice(0, F.length) : ['P1', cfg.mode === '2p' ? 'P2' : cfg.mode === 'training' ? 'DUMMY' : 'CPU'];
@@ -282,7 +324,7 @@
         if (d.heavy || d.launch) FX.ring(d.x, d.y, 0.5, '#ffffff', 2.2, 0.25);
         shake = Math.max(shake, d.heavy ? 0.32 : d.sup ? 0.22 : 0.12);
         sfx(d.heavy ? 'heavy' : 'hit', d.dmg / 30);
-        if (d.combo >= 2) showCombo(d.att.side, d.combo);
+        if (d.combo >= 2 && d.att.side >= 0) showCombo(d.att.side, d.combo);
         if (match && match.training && d.def.side === 1) { if (d.combo === 1) match.comboDmg = 0; match.comboDmg += d.dmg; match.lastCombo = d.combo; $('tInfo').textContent = d.combo + ' HIT' + (d.combo > 1 ? 'S' : '') + '  ' + match.comboDmg + ' DMG'; }
         break;
       case 'block': FX.blockSpark(d.x, d.y); sfx('block'); shake = Math.max(shake, 0.05); break;
@@ -296,8 +338,22 @@
       case 'land': FX.dust(d.f.x, 4); sfx('land'); break;
       case 'fall': FX.dust(d.f.x, 10); sfx('land'); shake = Math.max(shake, 0.12); break;
       case 'dash': sfx('dash'); FX.dust(d.f.x, 6); break;
-      case 'proj': sfx(d.p.kind === 'void' ? 'void' : d.p.kind === 'ice' ? 'ice' : 'fire'); FX.burst(d.p.x, d.p.ground ? 0.5 : d.p.y, d.p.color, 10, 4, 0.3, 0.3); break;
-      case 'projHit': FX.burst(d.p.x, d.p.ground ? 0.6 : d.p.y, d.p.color, 22, 7, 0.4, 0.45); if (d.p.kind === 'ice') { FX.spike(d.p.x, 2.0, 0.6); } break;
+      case 'proj': sfx(d.p.kind === 'void' ? 'void' : d.p.kind === 'ice' ? 'ice' : d.p.kind === 'mine' ? 'pixel' : 'fire'); FX.burst(d.p.x, d.p.ground ? 0.5 : d.p.y, d.p.color, 10, 4, 0.3, 0.3); break;
+      case 'projHit': FX.burst(d.p.x, d.p.ground ? 0.6 : d.p.y, d.p.color, 22, 7, 0.4, 0.45); if (d.p.kind === 'ice') { FX.spike(d.p.x, 2.0, 0.6); }
+        if (d.p.kind === 'mine') { FX.burst(d.p.x, 0.5, '#ff2bd6', 20, 8, 0.35, 0.5); FX.ring(d.p.x, 0.06, 0, '#9dff00', 3.2, 0.35, true); sfx('pixel'); shake = Math.max(shake, 0.25); } break;
+      case 'mineFizzle': FX.burst(d.p.x, 0.4, '#9dff00', 10, 3, 0.25, 0.4); break;
+      case 'grab': sfx('heavy'); FX.ring(d.opp.x, 1.2, 0.4, '#7ff5e6', 2.2, 0.3); FX.burst(d.opp.x, 1.2, '#7ff5e6', 14, 5, 0.3, 0.4); break;
+      case 'vortex': sfx('splash'); FX.ring(d.x, 0.06, 0, '#14b8a6', 9, 0.7, true); break;
+      case 'geyser': sfx('splash'); sfx('slam'); shake = Math.max(shake, 0.7); FX.ring(d.x, 0.06, 0, '#7ff5e6', 6, 0.5, true);
+        for (var gq = 0; gq < 3; gq++) FX.burst(d.x + (gq - 1) * 0.9, 0.5 + gq * 1.2, gq % 2 ? '#ffffff' : '#7ff5e6', 26, 9, 0.45, 0.7, 10); break;
+      case 'pixelCall': sfx('pixel'); break;
+      case 'meteorWarn': sfx('warn'); break;
+      case 'hzStrike':
+        if (d.h.kind === 'meteor') { sfx('slam'); FX.burst(d.h.x, 0.5, '#ff7a1a', 28, 9, 0.45, 0.6, 12); FX.ring(d.h.x, 0.06, 0, '#ffb04a', 5, 0.45, true); FX.dust(d.h.x - 0.5, 10, '#9aa0b8'); FX.dust(d.h.x + 0.5, 10, '#9aa0b8'); shake = Math.max(shake, 0.5); }
+        else { sfx(d.hit ? 'heavy' : 'block'); FX.burst(d.h.x, 0.6, d.h.last ? '#ff2bd6' : '#9dff00', 16, 7, 0.35, 0.4); FX.ring(d.h.x, 0.06, 0, '#9dff00', 2.4, 0.3, true); shake = Math.max(shake, d.h.last ? 0.4 : 0.15); }
+        break;
+      case 'beltWarn': subBanner('BELT SWITCHING!', 1500); sfx('warn'); break;
+      case 'beltSwitch': sfx('warn'); break;
       case 'clash': FX.spark(d.x, d.y, '#ffffff', 1.5); sfx('heavy'); shake = Math.max(shake, 0.2); break;
       case 'special': sfx('zap'); FX.burst(d.f.x, d.f.y + 1.3, d.f.def.color, 14, 4, 0.3, 0.4); break;
       case 'teleport': sfx('teleport'); FX.burst(d.x, d.y, '#c77dff', 26, 6, 0.35, 0.45); FX.ring(d.x, d.y, 0.3, '#ff6be6', 2, 0.3); break;
@@ -507,7 +563,7 @@
     updateCamera(dt);
     updateVis(dt);
     FX.update(dt * ts, camera, cam.x);
-    if (arena) arena.update(time);
+    if (arena) arena.update(time, world);
     updateHud();
     renderer.render(scene, camera);
   }
