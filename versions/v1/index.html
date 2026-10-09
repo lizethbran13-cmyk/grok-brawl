@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/* Grok Arcade Hall of Game Records: archived old version 1.0 of grok-brawl. Saves are kept separate from the newest version. */
+(function(){var P='grokOldVersion.grok-brawl.v1:';try{var S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem;function L(t){try{return t===window.localStorage;}catch(e){return false;}}
+S.getItem=function(k){return g.call(this,L(this)?P+k:k);};S.setItem=function(k,v){return s.call(this,L(this)?P+k:k,v);};S.removeItem=function(k){return r.call(this,L(this)?P+k:k);};}catch(e){}
+window.GROK_OLD_VERSION={repo:'grok-brawl',label:'v1',ver:'1.0',prefix:P};
+function badge(){try{var d=document.createElement('div');d.id='grokOldVerBadge';d.setAttribute('style','position:fixed;left:50%;top:6px;transform:translateX(-50%);z-index:2147483647;background:rgba(20,10,43,.92);color:#ffe14d;font:bold 12px/1.3 system-ui,sans-serif;padding:6px 12px;border-radius:14px;border:2px solid #ff4fd8;box-shadow:0 2px 10px rgba(0,0,0,.4);pointer-events:none;transition:opacity .8s;text-align:center;max-width:90vw');d.textContent='\uD83D\uDCFC OLD VERSION 1.0 \u00b7 from the Hall of Game Records \u00b7 separate save';document.body.appendChild(d);setTimeout(function(){d.style.opacity='0';},6000);setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},7000);}catch(e){}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',badge);else badge();})();</script>
+<meta name="robots" content="noindex">
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0620">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Grok Brawl - a chunky 3D arena fighter made for Lizeth.">
+<title>Grok Brawl</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="c" aria-label="Grok Brawl 3D view"></canvas>
+<div id="vignette"></div>
+<div id="superFx"><div class="lines"></div></div>
+
+<!-- fight HUD -->
+<div id="hud" class="hidden">
+  <div class="hbar p1"><img class="por" alt=""><div class="hinfo"><div class="hname"><span class="nm">P1</span><span class="tag">P1</span></div>
+    <div class="hp"><div class="trail"></div><div class="fill"></div></div>
+    <div class="hrow"><div class="pips"><i></i><i></i></div><div class="meter"><div class="mfill"></div><div class="mseg"></div><span class="mtxt"></span></div></div></div></div>
+  <div id="timer">60</div>
+  <div class="hbar p2"><img class="por" alt=""><div class="hinfo"><div class="hname"><span class="nm">P2</span><span class="tag">CPU</span></div>
+    <div class="hp"><div class="trail"></div><div class="fill"></div></div>
+    <div class="hrow"><div class="pips"><i></i><i></i></div><div class="meter"><div class="mfill"></div><div class="mseg"></div><span class="mtxt"></span></div></div></div></div>
+  <button id="pauseBtn" aria-label="Pause">II</button>
+  <div class="combo" id="combo0"></div><div class="combo" id="combo1"></div>
+  <div id="trainBar" class="hidden">
+    <span class="tl">DUMMY</span>
+    <button data-dm="stand" class="on">STAND</button><button data-dm="block">BLOCK</button><button data-dm="jump">JUMP</button><button data-dm="cpu">CPU</button>
+    <button id="tMeter" class="on">METER &#8734;</button><button id="tMoves">MOVES</button><button id="tReset">RESET</button>
+    <span id="tInfo"></span>
+  </div>
+</div>
+<div id="banner"></div>
+<div id="subBanner"></div>
+
+<!-- touch controls -->
+<div id="touch" class="hidden">
+  <div id="joyZone"><div id="joy"><div id="joyKnob"></div></div><div class="joyHint">MOVE</div></div>
+  <div id="btns">
+    <button class="tb punch" data-b="punch">PUNCH</button>
+    <button class="tb kick" data-b="kick">KICK</button>
+    <button class="tb block" data-b="block">BLOCK</button>
+    <button class="tb jump" data-b="jump">JUMP</button>
+    <button class="tb special" data-b="special">SPECIAL</button>
+    <button class="tb super" data-b="super">SUPER</button>
+    <button class="tb dash" data-b="dash">DASH</button>
+  </div>
+</div>
+
+<!-- screens -->
+<div id="title" class="screen">
+  <div class="logo"><span class="g1">GROK</span><span class="g2">BRAWL</span></div>
+  <div class="tsub">3D arena fighting &middot; made for Lizeth</div>
+  <button id="startBtn" class="big pulse">TAP TO START</button>
+  <div class="thelp" id="titleHelp"></div>
+</div>
+
+<div id="menu" class="screen hidden">
+  <div class="mlogo"><span class="g1">GROK</span><span class="g2">BRAWL</span></div>
+  <div class="mcol">
+    <button class="mbtn" data-mode="arcade"><b>ARCADE</b><small>Beat every fighter, then the boss</small></button>
+    <button class="mbtn" data-mode="versus"><b>VERSUS CPU</b><small>Pick fighters and arena</small></button>
+    <button class="mbtn" data-mode="training"><b>TRAINING</b><small>Practice on a dummy</small></button>
+    <button class="mbtn" data-mode="2p" id="btn2p"><b>2 PLAYERS</b><small>Same keyboard</small></button>
+    <div class="diff"><span>CPU</span><button data-diff="easy">EASY</button><button data-diff="normal">NORMAL</button><button data-diff="hard">HARD</button></div>
+    <div class="mfoot"><button id="muteBtn" class="pill">SOUND: ON</button><button id="howBtn" class="pill">CONTROLS</button><span id="record"></span></div>
+  </div>
+</div>
+
+<div id="select" class="screen hidden">
+  <div class="stop"><button class="back" data-back>&#9664; BACK</button><div class="stitle" id="selTitle">CHOOSE YOUR FIGHTER</div><div class="sspace"></div></div>
+  <div class="sinfo p1" id="info0"></div>
+  <div class="sinfo p2" id="info1"></div>
+  <div class="sbottom"><div id="cards"></div><button id="selGo" class="big go">NEXT &#9654;</button></div>
+</div>
+
+<div id="arenaSel" class="screen hidden">
+  <div class="stop"><button class="back" data-back>&#9664; BACK</button><div class="stitle">CHOOSE ARENA</div><div class="sspace"></div></div>
+  <div class="aname" id="aName"></div>
+  <div class="sbottom"><div id="acards"></div><button id="arenaGo" class="big go">FIGHT! &#9654;</button></div>
+</div>
+
+<div id="ladder" class="screen hidden">
+  <div class="stop"><button class="back" data-back>&#9664; QUIT</button><div class="stitle" id="ladTitle">ARCADE</div><div class="sspace"></div></div>
+  <div id="ladRow"></div>
+  <div class="ladVs" id="ladVs"></div>
+  <button id="ladGo" class="big go pulse">FIGHT! &#9654;</button>
+</div>
+
+<div id="result" class="screen hidden">
+  <div class="rwin" id="rWin">BLAZE WINS!</div>
+  <div class="rsub" id="rSub"></div>
+  <div class="rstats" id="rStats"></div>
+  <div class="rbtns" id="rBtns"></div>
+</div>
+
+<div id="pause" class="screen hidden">
+  <div class="pbox">
+    <div class="ptitle">PAUSED</div>
+    <button class="big" id="pResume">RESUME</button>
+    <button class="big alt" id="pMoves">MOVE LIST</button>
+    <button class="big alt" id="pRestart">RESTART</button>
+    <button class="big alt" id="pMute">SOUND: ON</button>
+    <button class="big alt danger" id="pQuit">QUIT TO MENU</button>
+  </div>
+</div>
+
+<div id="moves" class="screen hidden">
+  <div class="mvbox">
+    <div class="mvhead"><span id="mvTitle">MOVE LIST</span><button class="x" id="mvClose" aria-label="Close">&#10005;</button></div>
+    <div class="mvlist" id="mvList"></div>
+  </div>
+</div>
+
+<div id="unlock" class="hidden"><div class="ubox"><div class="ut">NEW FIGHTER UNLOCKED!</div><img id="uImg" alt=""><div class="un">GROK PRIME</div><button class="big" id="uOk">AWESOME!</button></div></div>
+
+<div id="rotate"><div class="rot"><div class="phone"></div><b>Turn your phone sideways</b><span>Grok Brawl plays in landscape</span></div></div>
+<div id="fade"></div>
+
+<script src="three.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/models.js"></script>
+<script src="js/arenas.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/input.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
