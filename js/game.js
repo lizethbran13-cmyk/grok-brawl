@@ -34,6 +34,8 @@
     FX.setProjScale(renderer.getDrawingBufferSize(new T.Vector2()).y * 0.5 / Math.tan(camera.fov * Math.PI / 360));
   }
   G.renderer = function () { return renderer; };
+  G.setView = function (v) { view = v; if (v === 'story') { match = null; world = null; preview = null; } };
+  G.view = function () { return view; };
 
   /* ---------- visuals for projectiles and beams ---------- */
   function haloTex() { var c = document.createElement('canvas'); c.width = c.height = 64; var g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 2, 32, 32, 31); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.4, 'rgba(255,255,255,0.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); }
@@ -71,8 +73,8 @@
     projs.forEach(function (p) {
       var v = projVis.find(function (q) { return q.p === p; });
       if (!v) { v = projVis.find(function (q) { return !q.p; }); if (!v) return; v.p = p; v.g.visible = true;
-        var col = p.kind === 'void' ? '#b04aff' : p.kind === 'ice' ? '#9fe8ff' : p.kind === 'mine' ? '#ff2bd6' : '#ff7a1a';
-        v.core.material.color.set(p.kind === 'void' ? '#2a0a4a' : p.kind === 'ice' ? '#e8fbff' : '#fff2a0'); v.halo.material.color.set(col);
+        var col = p.kind === 'void' ? '#b04aff' : p.kind === 'ice' ? '#9fe8ff' : p.kind === 'mine' ? '#ff2bd6' : p.kind === 'fire' ? '#ff7a1a' : (p.color || '#ff7a1a');
+        v.core.material.color.set(p.kind === 'void' ? '#2a0a4a' : p.kind === 'ice' ? '#e8fbff' : p.core || '#fff2a0'); v.halo.material.color.set(col);
         var s = p.r * 2; v.core.scale.setScalar(s); v.halo.scale.set(s * 3, s * 3, 1);
         v.core.visible = p.kind !== 'mine'; v.cube.visible = p.kind === 'mine'; v.cube.scale.setScalar(0.5); v.cube.rotation.set(0, 0, 0);
       }
@@ -89,7 +91,8 @@
       if (!fast) {
         if (p.kind === 'fire') { FX.trail(p.x - Math.sign(p.vx) * 0.2, y, Math.random() < 0.5 ? '#ff7a1a' : '#ffe14d', 0.55, 0.3); }
         else if (p.kind === 'void') { FX.trail(p.x, y, Math.random() < 0.5 ? '#b04aff' : '#ff6be6', 0.7, 0.5); }
-        else { if (p.t % 3 === 0 && !p._sp) { FX.spike(p.x, 1.1, 0.35); } FX.trail(p.x, 0.3, '#bff4ff', 0.35, 0.6); }
+        else if (p.kind === 'ice') { if (p.t % 3 === 0 && !p._sp) { FX.spike(p.x, 1.1, 0.35); } FX.trail(p.x, 0.3, '#bff4ff', 0.35, 0.6); }
+        else { FX.trail(p.x - Math.sign(p.vx) * 0.2, y, Math.random() < 0.5 ? p.color : (p.color2 || '#ffffff'), p.ground ? 0.45 : 0.55, 0.35); if (p.ground && p.t % 4 === 0) FX.burst(p.x, 0.3, p.color2 || p.color, 3, 2, 0.2, 0.3); }
       }
     });
     var hz = world && world.hz ? world.hz : [];
@@ -181,7 +184,7 @@
     // cfg: {mode:'arcade'|'versus'|'training'|'2p'|'demo', p1, p2, arena, diff, boss, ladderIdx}
     preview = null; view = 'fight'; paused = false; slowT = 0; acc = 0;
     FX.clear(); G.loadArena(cfg.arena);
-    var d0 = GB.fighter(cfg.p1), d1 = GB.fighter(cfg.p2), d2 = cfg.p3 ? GB.fighter(cfg.p3) : null;
+    var d0 = GB.skinned(GB.fighter(cfg.p1), cfg.s1), d1 = GB.skinned(GB.fighter(cfg.p2), cfg.s2), d2 = cfg.p3 ? GB.skinned(GB.fighter(cfg.p3), cfg.s3) : null;
     F.length = 2;
     F[0] = C.makeFighter(d0, 0); F[1] = C.makeFighter(d1, 1, { hpMul: cfg.boss ? 1.15 : 1 });
     F[0].meter = 0; F[1].meter = 0;
@@ -352,7 +355,7 @@
         if (d.h.kind === 'meteor') { sfx('slam'); FX.burst(d.h.x, 0.5, '#ff7a1a', 28, 9, 0.45, 0.6, 12); FX.ring(d.h.x, 0.06, 0, '#ffb04a', 5, 0.45, true); FX.dust(d.h.x - 0.5, 10, '#9aa0b8'); FX.dust(d.h.x + 0.5, 10, '#9aa0b8'); shake = Math.max(shake, 0.5); }
         else { sfx(d.hit ? 'heavy' : 'block'); FX.burst(d.h.x, 0.6, d.h.last ? '#ff2bd6' : '#9dff00', 16, 7, 0.35, 0.4); FX.ring(d.h.x, 0.06, 0, '#9dff00', 2.4, 0.3, true); shake = Math.max(shake, d.h.last ? 0.4 : 0.15); }
         break;
-      case 'beltWarn': subBanner('BELT SWITCHING!', 1500); sfx('warn'); break;
+      case 'beltWarn': subBanner((arena && arena.beltMsg) || 'BELT SWITCHING!', 1500); sfx('warn'); break;
       case 'beltSwitch': sfx('warn'); break;
       case 'clash': FX.spark(d.x, d.y, '#ffffff', 1.5); sfx('heavy'); shake = Math.max(shake, 0.2); break;
       case 'special': sfx('zap'); FX.burst(d.f.x, d.f.y + 1.3, d.f.def.color, 14, 4, 0.3, 0.4); break;
@@ -473,16 +476,18 @@
     var cm = new T.PerspectiveCamera(34, 1, 0.1, 100);
     showroom = { scene: s, cam: cm, slots: [null, null], ids: [null, null], cache: {}, pads: pads, rings: rings, cheer: [0, 0] };
   }
-  G.showroom = function (ids, cheerSide) {
+  G.showroom = function (ids, cheerSide, skins) {
+    skins = skins || G._srSkins || [];
     view = 'showroom';
     for (var i = 0; i < 2; i++) {
       var id = ids[i];
-      if (showroom.ids[i] !== id) {
+      var sid = id ? id + '|' + (skins[i] || '') : id;
+      if (showroom.ids[i] !== sid) {
         if (showroom.slots[i]) showroom.scene.remove(showroom.slots[i].root);
-        showroom.slots[i] = null; showroom.ids[i] = id;
+        showroom.slots[i] = null; showroom.ids[i] = sid;
         if (id) {
-          var key = i + ':' + id, r = showroom.cache[key];
-          if (!r) { r = showroom.cache[key] = Mdl.build(GB.fighter(id)); }
+          var key = i + ':' + sid, r = showroom.cache[key];
+          if (!r) { r = showroom.cache[key] = Mdl.build(GB.skinned(GB.fighter(id), skins[i])); }
           r.root.position.set(i ? 1.55 : -1.55, 0.3, 0); r.root.rotation.y = i ? -0.5 : 0.5; showroom.scene.add(r.root); showroom.slots[i] = r; showroom.cheer[i] = 0;
         }
       }
@@ -543,6 +548,7 @@
     if (!hudEls) grabHud();
     time += dt;
     if (view === 'showroom') { updateShowroom(dt); renderer.render(showroom.scene, showroom.cam); return; }
+    if (view === 'story' && G.storyFrame) { G.storyFrame(dt, renderer, time); return; }
     if (paused) { renderer.render(scene, camera); return; }
     var ts = slowT > 0 ? 0.3 : 1; if (slowT > 0) slowT -= dt;
     if (match && !manual) {

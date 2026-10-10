@@ -9,7 +9,7 @@
 <meta name="description" content="Grok Brawl - a chunky 3D arena fighter made for Lizeth.">
 <title>Grok Brawl</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <canvas id="c" aria-label="Grok Brawl 3D view"></canvas>
@@ -69,8 +69,9 @@
     <button class="mbtn" data-mode="versus"><b>VERSUS CPU</b><small>Pick fighters and arena</small></button>
     <button class="mbtn" data-mode="training"><b>TRAINING</b><small>Practice on a dummy</small></button>
     <button class="mbtn" data-mode="2p" id="btn2p"><b>2 PLAYERS</b><small>Same keyboard</small></button>
+    <button class="mbtn tale" data-mode="story" id="btnTale"><b>&#11088; BRAWLER TALE</b><small>Story mode</small></button>
     <div class="diff"><span>CPU</span><button data-diff="easy">EASY</button><button data-diff="normal">NORMAL</button><button data-diff="hard">HARD</button></div>
-    <div class="mfoot"><button id="muteBtn" class="pill">SOUND: ON</button><button id="howBtn" class="pill">CONTROLS</button><span id="record"></span></div>
+    <div class="mfoot"><button id="muteBtn" class="pill">SOUND: ON</button><button id="howBtn" class="pill">CONTROLS</button><button id="eliteBtn" class="pill elite">ELITE BRAWLER PACK</button><span id="record"></span></div>
   </div>
 </div>
 
@@ -121,22 +122,38 @@
 
 <div id="unlock" class="hidden"><div class="ubox"><div class="ut">NEW FIGHTER UNLOCKED!</div><img id="uImg" alt=""><div class="un">GROK PRIME</div><button class="big" id="uOk">AWESOME!</button></div></div>
 
+<div id="eliteBox" class="hidden"><div class="ebox">
+  <button class="x" id="eliteClose" aria-label="Close">&#10005;</button>
+  <div class="et">&#11088; ELITE BRAWLER PACK</div><div class="es">MEGA DLC for Grok Brawl</div>
+  <ul class="el">
+    <li><b>6 new fighters:</b> JETT the Sky Pilot, KNOX the Robo Guardian, MAYA the Jungle Ranger, plus 3 ELITE CHALLENGERS (SHADE, SOL, CHOMP) you unlock by beating them in ARCADE</li>
+    <li><b>BRAWLER TALE story mode:</b> explore 6 big 3D worlds, collect Elite Crests, talk to everyone, then fight the champions</li>
+    <li><b>3 new arenas:</b> Sky Docks (the wind keeps shifting!), Crystal Caverns and Jungle Ruins</li>
+    <li><b>4 new skins for every fighter:</b> ELITE, SHADOW, GOLDEN and NEON</li>
+  </ul>
+  <div id="eliteState"></div>
+</div></div>
+
+<div id="tale" class="hidden"></div>
+
 <div id="rotate"><div class="rot"><div class="phone"></div><b>Turn your phone sideways</b><span>Grok Brawl plays in landscape</span></div></div>
 <div id="fade"></div>
 
 <script src="three.min.js"></script>
-<script src="js/data.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/models.js"></script>
-<script src="js/arenas.js"></script>
-<script src="js/fx.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/ai.js"></script>
-<script src="js/input.js"></script>
-<script src="js/game.js"></script>
+<script src="js/data.js?v=14"></script>
+<script src="js/audio.js?v=14"></script>
+<script src="js/models.js?v=14"></script>
+<script src="js/arenas.js?v=14"></script>
+<script src="js/fx.js?v=14"></script>
+<script src="js/combat.js?v=14"></script>
+<script src="js/elite.js?v=14"></script>
+<script src="js/ai.js?v=14"></script>
+<script src="js/input.js?v=14"></script>
+<script src="js/game.js?v=14"></script>
 <script src="peerjs.min.js"></script>
-<script src="js/grok-net.js"></script>
-<script src="js/online.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/grok-net.js?v=14"></script>
+<script src="js/online.js?v=14"></script>
+<script src="js/ui.js?v=14"></script>
+<script src="js/tale.js?v=14"></script>
 </body>
 </html>

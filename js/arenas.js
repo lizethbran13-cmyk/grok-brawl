@@ -336,10 +336,12 @@
   }
 
   var BUILDERS = { rooftop: rooftop, vegas: vegas, dojo: dojo, volcano: volcano, hangar: hangar, moon: moon, factory: factory };
+  A.EXT = {}; // add-on arena builders (Elite Brawler Pack)
+  A.H = { T: T, lam: lam, basic: basic, add: add, geo: geo, box: box, cyl: cyl, cone: cone, ball: ball, plane: plane, M: M, cv: cv, gradTex: gradTex, skyTex: skyTex, textTex: textTex, sign: sign, floor: floor, instanced: instanced, edgeStrip: edgeStrip, lights: lights };
   A.HALF = 9.2; // stage half width (walls)
   A.build = function (id) {
     var root = new T.Group(); root.name = 'arena-' + id;
-    var o = BUILDERS[id](root); o.group = root; o.id = id; o.update = o.update || function () {};
+    var o = (BUILDERS[id] || A.EXT[id] || BUILDERS.rooftop)(root); o.group = root; o.id = id; o.update = o.update || function () {};
     return o;
   };
 })();

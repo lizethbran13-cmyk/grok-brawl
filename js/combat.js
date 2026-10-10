@@ -84,7 +84,7 @@
         if (m.t === o.at) {
           w.projs = w.projs.filter(function (p) { return !(p.owner === f && p.kind === kind); });
           var p = { kind: kind, owner: f, x: f.x + f.facing * 0.95 * f.sc, y: o.ground ? 0 : f.y + 1.35 * f.sc, vx: f.facing * o.speed, r: o.r, h: o.h || 0, ground: !!o.ground,
-            dmg: o.dmg, hs: o.hs, bs: o.bs, kb: o.kb || 2.5, chip: o.chip || 8, life: o.life || 120, color: o.color, launch: o.launch, freeze: o.freeze, t: 0 };
+            dmg: o.dmg, hs: o.hs, bs: o.bs, kb: o.kb || 2.5, chip: o.chip || 8, life: o.life || 120, color: o.color, color2: o.color2, core: o.core, launch: o.launch, freeze: o.freeze, t: 0 };
           w.projs.push(p); w.emit('proj', { f: f, p: p });
         }
       } };
@@ -178,7 +178,7 @@
     beam: function () {
       return { name: 'super', kind: 'super', total: 76, invuln: [1, 22], anim: function (t) { return t < 16 ? 'charge' : 'beam'; },
         hits: [{ from: 18, to: 58, multi: 5, x0: 0.3, x1: 18, y0: 0.25, y1: 1.95, dmg: 26, hs: 14, bs: 10, chip: 6, kb: 0.3, launchAfter: 8, launch: [7, 9], noFreeze: true }],
-        onFrame: function (f, w, m) { if (m.t === 16) w.beams.push({ owner: f, x: f.x + f.facing * 0.6 * f.sc, y: f.y + 1.15 * f.sc, dir: f.facing, t: 0, dur: 48, color: '#ff7a1a', color2: '#ffe14d' }); } };
+        onFrame: function (f, w, m) { if (m.t === 16) w.beams.push({ owner: f, x: f.x + f.facing * 0.6 * f.sc, y: f.y + 1.15 * f.sc, dir: f.facing, t: 0, dur: 48, color: (f.def.beam && f.def.beam[0]) || '#ff7a1a', color2: (f.def.beam && f.def.beam[1]) || '#ffe14d' }); } };
     },
     glacier: function () {
       return { name: 'super', kind: 'super', total: 72, invuln: [1, 24], anim: function (t) { return t < 12 ? 'charge' : 'slamDown'; },
@@ -212,7 +212,7 @@
         onFrame: function (f, w, m, opp) {
           if (m.lockT == null) {
             if (m.t === 9) w.emit('dash', { f: f, special: true });
-            if (m.t >= 9 && m.t <= 36) { f.vx = f.facing * 24; if (f.id === 'nova') f.hidden = (m.t % 6) < 3; } else { f.vx *= 0.7; f.hidden = false; }
+            if (m.t >= 9 && m.t <= 36) { f.vx = f.facing * 24; if (f.id === 'nova' || f.def.flicker) f.hidden = (m.t % 6) < 3; } else { f.vx *= 0.7; f.hidden = false; }
             return;
           }
           f.hidden = false; f.vx = 0; var k = m.t - m.lockT;
@@ -252,6 +252,7 @@
         } };
     }
   };
+  C.SPECIALS = SPECIALS; C.SUPERS = SUPERS; C.projMove = projMove; C.resolveHit = resolveHit; C.endMove = function (f, w) { end(f, w); };
   C.specialName = function (def) { return def.special.name; };
 
   function end(f, w) { f.move = null; f.state = grounded(f) ? 'idle' : 'air'; f.st = 0; f.grav = 1; f.hidden = false; f.chain = 0; }

@@ -106,24 +106,24 @@
     function add(bone, k, s, p, c, r) { S[bone].push({ k: k, s: s, p: p, c: c, r: r }); }
     function both(bone, k, s, p, c, r) { add(bone + 'L', k, s, [p[0], p[1], p[2]], c, r); add(bone + 'R', k, s, [-p[0], p[1], p[2]], c, r ? [r[0], -r[1], -r[2]] : null); }
     var C = {}; // palette
-    var id = def.id;
-    var skin = { blaze: '#f0b98a', volt: '#c98a5a', boulder: '#8f9a86', nova: '#e9c6a8', frost: '#cfe9ff', sakura: '#ffd9c2', prime: '#2a2a3a', riptide: '#d9a06e', glitch: '#c8c8d8' }[id];
+    var id = def.id, X = (M.EXT && M.EXT[id]) || null; // X: look data for add-on fighters (Elite Brawler Pack)
+    var skin = X ? X.skin : { blaze: '#f0b98a', volt: '#c98a5a', boulder: '#8f9a86', nova: '#e9c6a8', frost: '#cfe9ff', sakura: '#ffd9c2', prime: '#2a2a3a', riptide: '#d9a06e', glitch: '#c8c8d8' }[id];
     var top = def.color, acc = def.color2;
-    var pants = { blaze: '#2a1a1a', volt: '#1d2440', boulder: '#5b4a3a', nova: '#2b1747', frost: '#2b5d8a', sakura: '#ff5fb0', prime: '#15151f', riptide: '#0f4a52', glitch: '#1b1b2a' }[id];
-    var glove = { blaze: '#ffb020', volt: '#22e5ff', boulder: '#a8a29e', nova: '#ff6be6', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531', riptide: '#ff7f50', glitch: '#9dff00' }[id];
-    var boot = { blaze: '#ffffff', volt: '#ffd400', boulder: '#6b625a', nova: '#1a0f2e', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531', riptide: '#ff7f50', glitch: '#ff2bd6' }[id];
+    var pants = X ? X.pants : { blaze: '#2a1a1a', volt: '#1d2440', boulder: '#5b4a3a', nova: '#2b1747', frost: '#2b5d8a', sakura: '#ff5fb0', prime: '#15151f', riptide: '#0f4a52', glitch: '#1b1b2a' }[id];
+    var glove = X ? X.glove : { blaze: '#ffb020', volt: '#22e5ff', boulder: '#a8a29e', nova: '#ff6be6', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531', riptide: '#ff7f50', glitch: '#9dff00' }[id];
+    var boot = X ? X.boot : { blaze: '#ffffff', volt: '#ffd400', boulder: '#6b625a', nova: '#1a0f2e', frost: '#e8fbff', sakura: '#ffffff', prime: '#ffc531', riptide: '#ff7f50', glitch: '#ff2bd6' }[id];
     if (id === 'glitch') top = '#2a2a3c';
-    var chestW = id === 'boulder' ? 0.98 : id === 'riptide' ? 1.04 : id === 'volt' ? 0.7 : id === 'glitch' ? 0.66 : 0.8;
+    var chestW = X ? (X.chestW || 0.8) : id === 'boulder' ? 0.98 : id === 'riptide' ? 1.04 : id === 'volt' ? 0.7 : id === 'glitch' ? 0.66 : 0.8;
     // torso
     add('chest', 'box', [chestW, 0.6, 0.48], [0, 0.38, 0], id === 'sakura' ? '#ffffff' : top);
     add('chest', 'box', [chestW * 0.8, 0.26, 0.4], [0, 0.06, 0], id === 'sakura' ? '#ffffff' : top);
     add('hips', 'box', [0.64, 0.3, 0.4], [0, 0, 0], pants);
     add('hips', 'box', [0.68, 0.1, 0.44], [0, 0.13, 0], id === 'prime' ? '#ffc531' : id === 'volt' ? '#111' : '#151018');
     // head base
-    var hs = id === 'boulder' ? 0.5 : id === 'riptide' ? 0.52 : 0.56;
+    var hs = X ? (X.hs || 0.56) : id === 'boulder' ? 0.5 : id === 'riptide' ? 0.52 : 0.56;
     if (id !== 'glitch') add('head', 'box', [hs, hs, hs * 0.94], [0, 0.3, 0], skin);
     // eyes / face
-    var eyeC = id === 'prime' ? '#ffd84d' : id === 'nova' ? '#ff9bf0' : '#111018';
+    var eyeC = X && X.eye ? X.eye : id === 'prime' ? '#ffd84d' : id === 'nova' ? '#ff9bf0' : '#111018';
     if (id === 'glitch') {
       // CRT monitor head with a pixel face
       add('head', 'box', [0.84, 0.64, 0.6], [0, 0.32, -0.02], '#3a3a4e');
@@ -142,7 +142,7 @@
       add('head', 'box', [0.14, 0.035, 0.04], [0, 0.16, hs * 0.47 + 0.01], '#7a2a2a');
     }
     // arms & legs base
-    var armC = (id === 'blaze' || id === 'sakura' || id === 'riptide') ? skin : top;
+    var armC = X ? (X.armSkin ? skin : top) : (id === 'blaze' || id === 'sakura' || id === 'riptide') ? skin : top;
     both('ua', 'box', [0.24, 0.4, 0.26], [0, -0.18, 0], armC);
     both('ua', 'ball', [0.34, 0.32, 0.34], [0, 0, 0], id === 'sakura' ? '#ffffff' : id === 'riptide' ? skin : top);
     both('fa', 'box', [0.22, 0.3, 0.24], [0, -0.14, 0], armC);
@@ -226,6 +226,8 @@
       add('chest', 'box', [0.7, 0.1, 0.5], [0, -0.03, 0], '#9dff00');
       both('ua', 'box', [0.2, 0.2, 0.2], [0.14, 0.18, 0.08], '#ff2bd6', [0.4, 0.3, 0]); both('ua', 'box', [0.14, 0.14, 0.14], [0.2, 0.02, -0.12], '#9dff00', [0, 0.6, 0.3]);
       both('sh', 'box', [0.3, 0.08, 0.32], [0, -0.3, 0], '#9dff00');
+    } else if (X && X.parts) {
+      X.parts(add, both, { hs: hs, top: top, acc: acc, skin: skin, chestW: chestW });
     } else if (id === 'prime') {
       [[0, 0.72, 0.1], [0.18, 0.66, 0.1], [-0.18, 0.66, 0.1], [0.09, 0.7, 0.12], [-0.09, 0.7, 0.12]].forEach(function (h, i) { add('head', 'cone4', [0.1, i ? 0.22 : 0.32, 0.1], h, '#ffc531'); });
       add('head', 'box', [hs + 0.06, 0.12, hs + 0.04], [0, 0.6, 0], '#ffc531');
@@ -245,6 +247,7 @@
   M.build = function (def, opts) {
     opts = opts || {};
     var S = look(def), mat = M.fighterMaterial(def.rim), om = M.outlineMaterial();
+    if (def._skin && M.reskin) for (var sk in S) S[sk].forEach(function (pt) { pt.c = M.reskin(pt.c, def._skin, def); });
     var root = new T.Group(), body = new T.Group(); root.add(body);
     var sc = def.scale || 1; body.scale.setScalar(sc);
     var J = {};
@@ -258,7 +261,7 @@
     seg(S.hips, pivot);
     var torso = grp('torso', pivot, 0, 0.1, 0); seg(S.chest, torso);
     var head = grp('head', torso, 0, 0.72, 0); seg(S.head, head);
-    var sw = def.id === 'boulder' ? 0.6 : def.id === 'riptide' ? 0.62 : def.id === 'volt' || def.id === 'glitch' ? 0.43 : 0.5;
+    var sw = M.EXT && M.EXT[def.id] ? (M.EXT[def.id].sw || 0.5) : def.id === 'boulder' ? 0.6 : def.id === 'riptide' ? 0.62 : def.id === 'volt' || def.id === 'glitch' ? 0.43 : 0.5;
     var sL = grp('sL', torso, sw, 0.58, 0); seg(S.uaL, sL); var eL = grp('eL', sL, 0, -0.38, 0); seg(S.faL, eL);
     var sR = grp('sR', torso, -sw, 0.58, 0); seg(S.uaR, sR); var eR = grp('eR', sR, 0, -0.38, 0); seg(S.faR, eR);
     var hL = grp('hL', pivot, 0.19, -0.04, 0); seg(S.thL, hL); var kL = grp('kL', hL, 0, -0.5, 0); seg(S.shL, kL);

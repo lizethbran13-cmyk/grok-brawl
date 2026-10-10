@@ -89,5 +89,6 @@ window.GB = window.GB || {};
     return d;
   })();
   GB.persist = function () { try { localStorage.setItem(KEY, JSON.stringify(GB.save)); } catch (e) {} };
-  GB.isUnlocked = function (id) { var f = GB.fighter(id); return !f.hidden || !!GB.save.unlocked[id]; };
+  GB.isUnlocked = function (id) { var f = GB.fighter(id); if (f.dlc) return !!(GB.Elite && GB.Elite.usable(id)); return !f.hidden || !!GB.save.unlocked[id]; };
+  GB.skinned = function (def, skin) { return GB.Elite && skin ? GB.Elite.skinned(def, skin) : def; };
 })();

@@ -5,6 +5,8 @@
   var keys = {};
   var touch = { jump: false, left: false, right: false, up: false, down: false, punch: false, kick: false, block: false, special: false, super: false, dash: false };
   I.twoPlayer = false;
+  I.joyVec = { x: 0, y: 0 };
+  I.keys = function () { return keys; };
   I.touchState = touch;
 
   var MAP1 = { // single player: everything
@@ -39,7 +41,7 @@
   /* ---------- touch controls ---------- */
   var joy = { id: null, cx: 0, cy: 0, x: 0, y: 0, lastTapDir: 0, lastTapT: 0 }, joyEl, knob, zone;
   function resetJoy() {
-    joy.id = null; joy.x = joy.y = 0; touch.left = touch.right = touch.up = touch.down = false;
+    joy.id = null; joy.x = joy.y = 0; I.joyVec.x = I.joyVec.y = 0; touch.left = touch.right = touch.up = touch.down = false;
     if (joyEl) { joyEl.style.left = ''; joyEl.style.top = ''; joyEl.classList.remove('active'); }
     if (knob) knob.style.transform = '';
   }
@@ -47,7 +49,7 @@
     var dx = x - joy.cx, dy = y - joy.cy, d = Math.hypot(dx, dy), R = 56;
     if (d > R) { dx *= R / d; dy *= R / d; }
     knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-    var nx = dx / R, ny = -dy / R;
+    var nx = dx / R, ny = -dy / R; I.joyVec.x = nx; I.joyVec.y = ny;
     var wasL = touch.left, wasR = touch.right;
     touch.left = nx < -0.38; touch.right = nx > 0.38; touch.up = ny > 0.55; touch.down = ny < -0.62;
     // double flick -> dash

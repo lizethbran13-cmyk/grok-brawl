@@ -42,29 +42,43 @@
     $('pMute').textContent = 'SOUND: ' + (A.isMuted() ? 'OFF' : 'ON');
     var s = GB.save; $('record').textContent = 'Wins ' + s.wins + ' \u00b7 Losses ' + s.losses + ' \u00b7 Arcade clears ' + s.arcadeClears;
     $('btn2p').classList.toggle('hidden', isTouch);
+    var own = GB.Elite.owned(), un = GB.FIGHTERS.filter(function (f) { return f.dlc && GB.isUnlocked(f.id); }).length;
+    $('btnTale').classList.toggle('locked', !own); $('btnTale').querySelector('small').textContent = own ? 'Story mode \u00b7 explore in 3D, fight in 2.5D' + (GB.Elite.save.tale.ch ? ' \u00b7 Chapter ' + Math.min(6, GB.Elite.save.tale.ch + 1) : '') : '\uD83D\uDD12 Elite Brawler Pack (MEGA DLC)';
+    $('eliteBtn').textContent = own ? '\u2B50 ELITE PACK: ' + un + '/6 FIGHTERS' : '\uD83D\uDD12 ELITE BRAWLER PACK';
+    $('eliteState').innerHTML = own ? '<b class="ok">\u2714 You own it!</b> ' + un + ' of 6 Elite fighters unlocked' + (un < 6 ? ' \u00b7 beat the <b>Elite Challengers</b> in ARCADE for the rest.' : '. All of them!') : '<a class="dlcLink" href="' + GB.Elite.SHOP + '" target="_blank" rel="noopener">GET IT IN THE GROK ARCADE DLC SHOP \u2197</a><small>Priced as a MEGA pack in tickets (your first MEGA pack is free with a voucher). It unlocks here the moment you buy it.</small>';
   }
 
   /* ---------- character select ---------- */
   function statBars(label, v, fc) { var h = '<div class="st"><span>' + label + '</span><div class="bars">'; for (var i = 1; i <= 5; i++) h += '<i class="' + (i <= v ? 'on' : '') + '"></i>'; return h + '</div></div>'; }
-  function infoHtml(def, who, locked) {
+  function eliteTeaser(who, what) {
+    return '<span class="who">' + who + '</span><div class="nm elT">\u2B50 ELITE BRAWLER PACK</div><div class="ti">MEGA DLC \u00b7 ' + (what || '6 new fighters, 3 arenas, skins + BRAWLER TALE story mode') + '</div>' +
+      '<div class="sp">Unlock it with tickets in the <b>DLC Shop</b> at the Grok Arcade (Hall of Game Records).</div><a class="dlcLink" href="' + GB.Elite.SHOP + '" target="_blank" rel="noopener">OPEN GROK ARCADE \u2197</a>';
+  }
+  function infoHtml(def, who, locked, slot) {
+    if (locked && def && def.dlc && !GB.Elite.owned()) return eliteTeaser(who, def.name + ' the ' + def.title + ' is in the Elite Brawler Pack');
+    if (locked && def && def.arcadeLock) return '<span class="who">' + who + '</span><div class="nm">???</div><div class="ti">ELITE CHALLENGER</div><div class="sp">Play <b>ARCADE</b> mode: this fighter shows up as an <b>Elite Challenger</b> before the boss. Beat them to unlock!</div>';
     if (locked) return '<span class="who">' + who + '</span><div class="nm">???</div><div class="ti">Secret fighter</div><div class="sp">Beat <b>ARCADE</b> mode to unlock this fighter!</div>';
     return '<span class="who">' + who + '</span><div class="nm">' + def.name + '</div><div class="ti">' + def.title + '</div>' +
       statBars('SPEED', def.stats.speed) + statBars('POWER', def.stats.power) + statBars('WEIGHT', def.stats.weight) +
-      '<div class="sp"><b>SPECIAL:</b> ' + def.special.name + '<br><b>SUPER:</b> ' + def.super.name + '</div>';
+      '<div class="sp"><b>SPECIAL:</b> ' + def.special.name + '<br><b>SUPER:</b> ' + def.super.name + '</div>' +
+      (slot != null && GB.Elite.owned() ? '<div class="skr" data-slot="' + slot + '"><button class="skb" data-d="-1" aria-label="Previous skin">\u25C0</button><span>SKIN: <b>' + GB.Elite.skinName(sel.skins[slot]) + '</b></span><button class="skb" data-d="1" aria-label="Next skin">\u25B6</button></div>' : '');
   }
   function slotLabel(i) { if (!sel) return ''; if (i === 0) return 'PLAYER 1'; return sel.mode === '2p' ? 'PLAYER 2' : sel.mode === 'training' ? 'DUMMY' : 'CPU'; }
   function openSelect(mode) {
-    sel = { mode: mode, slot: 0, picks: [sel && sel.picks[0] || 'blaze', sel && sel.picks[1] || 'volt'], nSlots: mode === 'arcade' ? 1 : 2, cursor: 0, locked: [false, false] };
+    sel = { mode: mode, slot: 0, picks: [sel && sel.picks[0] || 'blaze', sel && sel.picks[1] || 'volt'], nSlots: mode === 'arcade' || mode === 'story' ? 1 : 2, cursor: 0, locked: [false, false], skins: ['', ''] };
+    sel.picks = sel.picks.map(function (id) { return id && GB.isUnlocked(id) ? id : 'blaze'; });
     if (sel.nSlots === 1) sel.picks[1] = null;
+    syncSkins();
     buildCards(); show('select'); updateSelect(); A.music(5);
   }
   function buildCards() {
     var wrap = $('cards'); wrap.innerHTML = '';
     GB.FIGHTERS.concat([{ id: 'random', name: 'RANDOM', color: '#ffffff' }]).forEach(function (f, i) {
-      var b = document.createElement('button'); b.className = 'card' + (f.id === 'random' ? ' rand' : '') + (f.id !== 'random' && !GB.isUnlocked(f.id) ? ' locked' : '');
+      var lk = f.id !== 'random' && !GB.isUnlocked(f.id), dlcT = lk && f.dlc && !GB.Elite.owned();
+      var b = document.createElement('button'); b.className = 'card' + (f.id === 'random' ? ' rand' : '') + (lk ? ' locked' : '') + (dlcT ? ' dlcT' : '') + (f.elite ? ' elite' : '');
       b.style.setProperty('--fc', f.color); b.setAttribute('data-id', f.id); b.setAttribute('aria-label', f.name);
-      if (portraits[f.id] && GB.isUnlocked(f.id)) b.style.backgroundImage = 'url(' + portraits[f.id] + ')';
-      b.innerHTML = '<span class="cn">' + (f.id !== 'random' && !GB.isUnlocked(f.id) ? '???' : f.name) + '</span>';
+      if (portraits[f.id] && (!lk || (dlcT && !f.arcadeLock))) b.style.backgroundImage = 'url(' + portraits[f.id] + ')';
+      b.innerHTML = '<span class="cn">' + (lk && (!dlcT || f.arcadeLock) ? '???' : f.name) + '</span>' + (dlcT ? '<span class="dlcB">\uD83D\uDD12 DLC</span>' : f.elite ? '<span class="dlcB ok">ELITE</span>' : '');
       b.addEventListener('click', function () { pickCard(f.id); });
       wrap.appendChild(b);
     });
@@ -72,28 +86,36 @@
   function randomId() { var pool = GB.FIGHTERS.filter(function (f) { return GB.isUnlocked(f.id); }); return pool[(Math.random() * pool.length) | 0].id; }
   function pickCard(id) {
     A.unlock();
-    if (id !== 'random' && !GB.isUnlocked(id)) { sel.tapped = null; A.play('back'); $('info' + sel.slot).innerHTML = infoHtml(null, slotLabel(sel.slot), true); return; }
+    if (id !== 'random' && !GB.isUnlocked(id)) { sel.tapped = null; A.play('back'); var ie = $('info' + sel.slot); ie.classList.remove('hidden'); ie.innerHTML = infoHtml(GB.fighter(id), slotLabel(sel.slot), true); return; }
     var real = id === 'random' ? randomId() : id;
     if (sel.picks[sel.slot] === real && sel.tapped === real && id !== 'random') { confirmSlot(); return; }
-    sel.picks[sel.slot] = real; sel.tapped = real; A.play('select'); updateSelect();
+    sel.picks[sel.slot] = real; sel.tapped = real; syncSkins(); A.play('select'); updateSelect();
   }
+  function syncSkins() { for (var i = 0; i < 2; i++) { var id = sel.picks[i]; sel.skins[i] = id && GB.Elite.owned() ? (GB.Elite.save.skin[id] || '') : ''; } G._srSkins = sel.skins; }
+  function cycleSkin(slot, d) {
+    var id = sel.picks[slot]; if (!id || !GB.Elite.owned()) return;
+    var nx = GB.Elite.nextSkin(sel.skins[slot], d); GB.Elite.save.skin[id] = nx; GB.persist(); syncSkins(); A.play('select'); updateSelect();
+  }
+  UI.cycleSkin = cycleSkin;
   function confirmSlot() {
-    A.play('confirm'); G.showroom(sel.picks, sel.slot);
+    A.play('confirm'); G._srSkins = sel.skins; G.showroom(sel.picks, sel.slot);
     sel.tapped = null;
     if (sel.slot + 1 < sel.nSlots) { sel.slot++; updateSelect(); return; }
     setTimeout(function () {
-      if (sel.mode === 'arcade') startArcade(sel.picks[0]);
+      if (sel.mode === 'story') { if (GB.Tale) GB.Tale.begin(sel.picks[0], sel.skins[0]); }
+      else if (sel.mode === 'arcade') startArcade(sel.picks[0]);
       else openArena();
     }, 450);
   }
   function updateSelect() {
-    G.showroom(sel.picks);
+    G._srSkins = sel.skins; G.showroom(sel.picks);
     $('selTitle').textContent = sel.nSlots === 1 ? 'CHOOSE YOUR FIGHTER' : sel.slot === 0 ? 'PLAYER 1: CHOOSE' : (sel.mode === '2p' ? 'PLAYER 2: CHOOSE' : sel.mode === 'training' ? 'CHOOSE DUMMY' : 'CHOOSE CPU FIGHTER');
     for (var i = 0; i < 2; i++) {
       var el = $('info' + i), id = sel.picks[i];
       if (!id) { el.classList.add('hidden'); continue; }
       el.classList.remove('hidden'); el.classList.toggle('wait', i > sel.slot);
-      var def = GB.fighter(id); el.style.setProperty('--fc', def.color); el.innerHTML = infoHtml(def, slotLabel(i));
+      var def = GB.fighter(id); el.style.setProperty('--fc', def.color); el.innerHTML = infoHtml(def, slotLabel(i), false, i);
+      el.querySelectorAll('.skb').forEach(function (bt) { bt.addEventListener('click', function (ev) { ev.stopPropagation(); cycleSkin(+bt.parentNode.getAttribute('data-slot'), +bt.getAttribute('data-d')); }); });
     }
     document.querySelectorAll('#cards .card').forEach(function (c) {
       var id = c.getAttribute('data-id'); c.classList.toggle('sel0', sel.picks[0] === id); c.classList.toggle('sel1', sel.picks[1] === id && sel.nSlots > 1);
@@ -101,17 +123,21 @@
       if (sel.picks[0] === id) c.insertAdjacentHTML('beforeend', '<span class="badge">P1</span>');
       if (sel.nSlots > 1 && sel.picks[1] === id && sel.slot >= 1) c.insertAdjacentHTML('beforeend', '<span class="badge b1">' + (sel.mode === '2p' ? 'P2' : sel.mode === 'training' ? 'DUM' : 'CPU') + '</span>');
     });
-    $('selGo').innerHTML = (sel.slot + 1 < sel.nSlots ? 'NEXT' : sel.mode === 'arcade' ? 'START' : 'ARENA') + ' &#9654;';
+    $('selGo').innerHTML = (sel.slot + 1 < sel.nSlots ? 'NEXT' : sel.mode === 'arcade' ? 'START' : sel.mode === 'story' ? 'BEGIN TALE' : 'ARENA') + ' &#9654;';
+    $('selTitle').textContent = sel.mode === 'story' ? 'BRAWLER TALE: CHOOSE YOUR HERO' : $('selTitle').textContent;
   }
 
   /* ---------- arena select ---------- */
   function openArena() {
-    arenaPick = arenaPick || 'rooftop'; arenaTapped = null;
+    arenaPick = arenaPick && GB.Elite.arenaOk(arenaPick) ? arenaPick : 'rooftop'; arenaTapped = null;
     var wrap = $('acards'); wrap.innerHTML = '';
     GB.ARENAS.concat([{ id: 'random', name: 'RANDOM', css: 'linear-gradient(135deg,#ff4a2e,#7d3aff,#3ff0ff)' }]).forEach(function (a) {
-      var b = document.createElement('button'); b.className = 'card acard'; b.style.background = a.css; b.setAttribute('data-id', a.id);
-      b.innerHTML = '<span class="cn">' + a.name + '</span>';
-      b.addEventListener('click', function () { var id = a.id === 'random' ? GB.ARENAS[(Math.random() * GB.ARENAS.length) | 0].id : a.id; if (id === arenaPick && arenaTapped === id && a.id !== 'random') { goFight(); return; } arenaPick = id; arenaTapped = id; A.play('select'); updArena(); });
+      var lk = a.dlc && !GB.Elite.owned();
+      var b = document.createElement('button'); b.className = 'card acard' + (lk ? ' locked dlcT' : '') + (a.dlc ? ' elite' : ''); b.style.background = a.css; b.setAttribute('data-id', a.id);
+      b.innerHTML = '<span class="cn">' + a.name + '</span>' + (lk ? '<span class="dlcB">\uD83D\uDD12 DLC</span>' : a.dlc ? '<span class="dlcB ok">ELITE</span>' : '');
+      b.addEventListener('click', function () {
+        if (lk) { A.play('back'); arenaTapped = null; $('aName').innerHTML = a.name + '<small>\uD83D\uDD12 Elite Brawler Pack arena \u00b7 unlock it in the DLC Shop at the <a class="dlcLink sm" href="' + GB.Elite.SHOP + '" target="_blank" rel="noopener">Grok Arcade \u2197</a></small>'; return; }
+        var pool = GB.ARENAS.filter(function (x) { return GB.Elite.arenaOk(x.id); }), id = a.id === 'random' ? pool[(Math.random() * pool.length) | 0].id : a.id; if (id === arenaPick && arenaTapped === id && a.id !== 'random') { goFight(); return; } arenaPick = id; arenaTapped = id; A.play('select'); updArena(); });
       wrap.appendChild(b);
     });
     show('arenaSel'); updArena();
@@ -123,7 +149,8 @@
   }
   function goFight() {
     A.play('confirm');
-    var cfg = { mode: sel.mode, p1: sel.picks[0], p2: sel.picks[1], arena: arenaPick, diff: GB.save.diff };
+    if (!GB.Elite.arenaOk(arenaPick)) return;
+    var cfg = { mode: sel.mode, p1: sel.picks[0], p2: sel.picks[1], arena: arenaPick, diff: GB.save.diff, s1: sel.skins[0], s2: sel.skins[1] };
     launch(cfg);
   }
 
@@ -131,10 +158,15 @@
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = (Math.random() * (i + 1)) | 0, t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function startArcade(p1) {
     var opp = shuffle(GB.FIGHTERS.filter(function (f) { return !f.hidden && f.id !== p1; }).map(function (f) { return f.id; }));
-    var arenas = shuffle(['rooftop', 'vegas', 'dojo', 'volcano', 'moon', 'factory']);
+    var el = GB.Elite.owned();
+    if (el) opp = opp.concat(shuffle(GB.FIGHTERS.filter(function (f) { return f.dlc && f.id !== p1 && GB.isUnlocked(f.id); }).map(function (f) { return f.id; })).slice(0, 2));
+    opp = shuffle(opp);
+    var arenas = shuffle(['rooftop', 'vegas', 'dojo', 'volcano', 'moon', 'factory'].concat(el ? GB.Elite.ARENAS : []));
     var list = opp.map(function (id, i) { return { id: id, arena: arenas[i % arenas.length] }; });
+    var ch = el ? GB.Elite.nextChallenger() : null;
+    if (ch) list.push({ id: ch.id, arena: { shade: 'rooftop', sol: 'jungle', chomp: 'volcano' }[ch.id] || 'crystal', challenger: true });
     list.push({ id: 'prime', arena: 'hangar', boss: true });
-    arcade = { p1: p1, list: list, idx: 0, diff: GB.save.diff };
+    arcade = { p1: p1, list: list, idx: 0, diff: GB.save.diff, s1: sel && sel.skins ? sel.skins[0] : '' };
     openLadder();
   }
   function openLadder() {
@@ -143,20 +175,21 @@
       var d = GB.fighter(o.id), el = document.createElement('div');
       el.className = 'lad' + (i < arcade.idx ? ' done' : '') + (i === arcade.idx ? ' cur' : '') + (o.boss ? ' boss' : '');
       el.style.setProperty('--fc', d.color);
-      var showImg = !o.boss || GB.isUnlocked('prime') || i <= arcade.idx;
+      var showImg = (!o.boss && !o.challenger) || GB.isUnlocked(o.id) || i <= arcade.idx;
+      if (o.challenger) el.className += ' chal';
       if (showImg) el.style.backgroundImage = 'url(' + portraits[o.id] + ')';
-      el.innerHTML = '<span class="ln">' + (o.boss && !showImg ? 'BOSS' : d.name) + '</span>';
+      el.innerHTML = '<span class="ln">' + (o.boss && !showImg ? 'BOSS' : o.challenger && !showImg ? 'ELITE ?' : d.name) + '</span>';
       row.appendChild(el);
     });
     var cur = arcade.list[arcade.idx], cd = GB.fighter(cur.id);
     $('ladTitle').textContent = 'ARCADE \u00b7 ' + GB.DIFFS[arcade.diff].label;
-    $('ladVs').innerHTML = GB.fighter(arcade.p1).name + ' <span style="color:#ff4fd8">VS</span> ' + cd.name + '<small>' + (cur.boss ? 'FINAL BOSS \u00b7 ' : 'Stage ' + (arcade.idx + 1) + ' of ' + arcade.list.length + ' \u00b7 ') + GB.arena(cur.arena).name + '</small>';
-    G.showroom([arcade.p1, cur.id]);
+    $('ladVs').innerHTML = GB.fighter(arcade.p1).name + ' <span style="color:#ff4fd8">VS</span> ' + cd.name + '<small>' + (cur.boss ? 'FINAL BOSS \u00b7 ' : cur.challenger ? '\u2B50 ELITE CHALLENGER! Win to unlock ' + cd.name + ' \u00b7 ' : 'Stage ' + (arcade.idx + 1) + ' of ' + arcade.list.length + ' \u00b7 ') + GB.arena(cur.arena).name + '</small>';
+    G._srSkins = [arcade.s1 || '', '']; G.showroom([arcade.p1, cur.id]);
     show('ladder'); A.music(5);
   }
   function arcadeFight() {
     var cur = arcade.list[arcade.idx];
-    launch({ mode: 'arcade', p1: arcade.p1, p2: cur.id, arena: cur.arena, diff: arcade.diff, boss: !!cur.boss });
+    launch({ mode: 'arcade', p1: arcade.p1, p2: cur.id, arena: cur.arena, diff: arcade.diff, boss: !!cur.boss || !!cur.challenger, s1: arcade.s1 || '', s2: cur.boss && GB.Elite.owned() ? 'gold' : '' });
   }
 
   /* ---------- fight ---------- */
@@ -176,6 +209,7 @@
   G.onMatchEnd = function (res, m) {
     var cfg = m.cfg, win = res.winner, wd = GB.fighter(win === 0 ? cfg.p1 : cfg.p2), s = GB.save;
     if (cfg.mode === 'online') { GB.Online.matchEnd(res, m); return; }
+    if (cfg.mode === 'story') { if (GB.Tale) GB.Tale.matchEnd(res, m); return; }
     if (cfg.mode !== '2p') {
       s.matches++; if (win === 0) { s.wins++; s.winsByDiff[cfg.diff] = (s.winsByDiff[cfg.diff] || 0) + 1; s.fighterWins[cfg.p1] = (s.fighterWins[cfg.p1] || 0) + 1; } else s.losses++;
     }
@@ -187,7 +221,8 @@
           s.arcadeClears++; var newUnlock = !s.unlocked.prime; s.unlocked.prime = true;
           btns = [['MENU', toMenuFade]];
           if (newUnlock) setTimeout(showUnlock, 900);
-        } else { sub = 'Stage ' + (arcade.idx + 1) + ' cleared!'; btns = [['NEXT FIGHT \u25B6', function () { arcade.idx++; openLadder(); }]]; }
+        } else { var chal = arcade.list[arcade.idx].challenger && GB.Elite.unlock(arcade.list[arcade.idx].id); if (chal) { var cid = arcade.list[arcade.idx].id; setTimeout(function () { showUnlock(cid); }, 900); }
+          sub = (chal ? 'ELITE CHALLENGER defeated! ' : '') + 'Stage ' + (arcade.idx + 1) + ' cleared!'; btns = [['NEXT FIGHT \u25B6', function () { arcade.idx++; openLadder(); }]]; }
       } else { sub = 'CONTINUE?'; btns = [['RETRY', function () { arcadeFight(); }], ['QUIT', toMenuFade]]; }
     } else {
       sub = cfg.mode === 'online' ? (((cfg.names && cfg.names[win]) || 'P' + (win + 1)) + ' takes it!') : cfg.mode === '2p' ? (win === 0 ? 'Player 1 takes it!' : 'Player 2 takes it!') : (win === 0 ? 'You win!' : 'The CPU wins this time');
@@ -202,7 +237,8 @@
     btns.forEach(function (b, i) { var e = document.createElement('button'); e.className = 'big' + (i ? ' alt' : ''); e.textContent = b[0]; e.addEventListener('click', function () { A.play('confirm'); b[1](); }); rb.appendChild(e); });
     show('result');
   };
-  function showUnlock() { A.play('unlock'); $('uImg').src = portraits.prime; $('unlock').classList.remove('hidden'); }
+  function showUnlock(id) { id = id || 'prime'; A.play('unlock'); $('uImg').src = portraits[id]; $('unlock').querySelector('.un').textContent = GB.fighter(id).name; $('unlock').querySelector('.ut').textContent = GB.fighter(id).elite ? 'ELITE FIGHTER UNLOCKED!' : 'NEW FIGHTER UNLOCKED!'; $('unlock').classList.remove('hidden'); }
+  UI.showUnlock = showUnlock;
   function toMenuFade() { $('fade').classList.add('on'); setTimeout(function () { G.quit(); toMenu(); $('fade').classList.remove('on'); }, 250); }
 
   /* ---------- pause / moves ---------- */
@@ -250,7 +286,15 @@
     var start = function () { if (screen !== 'title') return; A.unlock(); A.play('confirm'); toMenu(); };
     $('startBtn').addEventListener('click', start);
     $('title').addEventListener('pointerup', function (e) { if (e.target === $('title')) start(); });
-    document.querySelectorAll('.mbtn').forEach(function (b) { b.addEventListener('click', function () { A.unlock(); A.play('confirm'); openSelect(b.getAttribute('data-mode')); }); });
+    document.querySelectorAll('.mbtn').forEach(function (b) { b.addEventListener('click', function () { A.unlock(); var md = b.getAttribute('data-mode'); if (md === 'story' && !GB.Elite.owned()) { A.play('back'); $('eliteBox').classList.remove('hidden'); return; } A.play('confirm'); openSelect(md); }); });
+    $('eliteBtn').addEventListener('click', function () { A.unlock(); A.play('select'); $('eliteBox').classList.remove('hidden'); });
+    $('eliteClose').addEventListener('click', function () { $('eliteBox').classList.add('hidden'); });
+    GB.Elite.onChange(function (own) {
+      refreshMenu();
+      if (own) { $('eliteBox').classList.add('hidden'); if (GB.Tale && GB.Tale.toast) GB.Tale.toast('\u2B50 ELITE BRAWLER PACK unlocked! New fighters, arenas, skins and BRAWLER TALE are ready.'); }
+      if (screen === 'select') { if (!GB.isUnlocked(sel.picks[0])) sel.picks[0] = 'blaze'; if (sel.picks[1] && !GB.isUnlocked(sel.picks[1])) sel.picks[1] = 'volt'; syncSkins(); buildCards(); updateSelect(); }
+      else if (screen === 'arenaSel') openArena();
+    });
     document.querySelectorAll('.diff button').forEach(function (b) { b.addEventListener('click', function () { GB.save.diff = b.getAttribute('data-diff'); GB.persist(); A.play('select'); refreshMenu(); }); });
     $('muteBtn').addEventListener('click', function () { A.unlock(); A.toggle(); refreshMenu(); });
     $('pMute').addEventListener('click', function () { A.toggle(); refreshMenu(); });
@@ -307,7 +351,7 @@
         if (c === 'Escape' || c === 'Backspace') { back(); return true; }
         break;
       case 'arenaSel':
-        var as = GB.ARENAS.map(function (a) { return a.id; }), j = as.indexOf(arenaPick);
+        var as = GB.ARENAS.filter(function (a) { return GB.Elite.arenaOk(a.id); }).map(function (a) { return a.id; }), j = as.indexOf(arenaPick);
         if (c === 'ArrowRight' || c === 'KeyD') { arenaPick = as[(j + 1) % as.length]; A.play('select'); updArena(); return true; }
         if (c === 'ArrowLeft' || c === 'KeyA') { arenaPick = as[(j - 1 + as.length) % as.length]; A.play('select'); updArena(); return true; }
         if (c === 'Enter' || c === 'KeyJ' || c === 'Space') { goFight(); return true; }

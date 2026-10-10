@@ -3,7 +3,7 @@
   'use strict';
   var C = GB.Combat;
   var AI = GB.AI = {};
-  var PROJ = { fireball: 1, voidorb: 1, icespike: 1 };
+  var PROJ = GB.AI_PROJ = Object.assign({ fireball: 1, voidorb: 1, icespike: 1 }, GB.AI_PROJ || {});
 
   AI.create = function (f, params, seed) {
     return { f: f, p: params, hist: [], plan: null, planT: 0, planEnd: 0, blockUntil: 0, rolled: null, projRolled: null, cineRolled: null,

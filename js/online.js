@@ -13,7 +13,9 @@
   var hostName = '', localResult = null, phase = 'connecting', startedMid = 0, lockSent = null, tmp = {}, badge = null, leftShown = false;
   function $(id) { return document.getElementById(id); }
   function esc(s) { return GN.esc(s); }
-  function pool() { return GB.FIGHTERS.filter(function (f) { return !f.hidden; }); }
+  // Elite Brawler Pack: the host's pack is shared with the whole room (meta.elite); arcade-locked challengers still need your own unlock
+  function pool() { return GB.FIGHTERS.filter(function (f) { return !f.hidden || (f.dlc && GB.isUnlocked(f.id)); }); }
+  function arenasOk() { return GB.ARENAS.filter(function (a) { return !a.dlc || (GB.Elite && GB.Elite.owned()); }); }
   function players() { return room ? room.players() : []; }
   function byPid(pid) { return room && room.player(pid); }
   function ffa() { return meta.fmt === 'ffa'; }
@@ -91,7 +93,7 @@
     var fmt = '<div class="olFmt">' + (room.isHost ? '<button id="olF1" class="' + (ffa() ? '' : 'on') + '">1 VS 1</button><button id="olF3" class="' + (ffa() ? 'on' : '') + '"' + (nPl < 3 && !ffa() ? ' disabled title="Needs 3 players"' : '') + '>3P FREE-FOR-ALL</button>' + (nPl < 3 ? '<small>(3P needs a 3rd player)</small>' : '')
       : '<span class="olP" style="--pc:#ff4fd8">' + (ffa() ? '3-PLAYER FREE-FOR-ALL' : '1 VS 1') + '</span>') + '</div>';
     var missing = s.filter(function (pid) { return !pid; }).length, notLocked = opps.filter(function (pid) { return !(picks[pid] || {}).lock; });
-    var ar = GB.ARENAS.map(function (a) { return '<button class="olAr' + (meta.arena === a.id ? ' on' : '') + '" data-ar="' + a.id + '"' + (room.isHost ? '' : ' disabled') + '>' + esc(a.name) + '</button>'; }).join('');
+    var ar = arenasOk().map(function (a) { return '<button class="olAr' + (meta.arena === a.id ? ' on' : '') + '" data-ar="' + a.id + '"' + (room.isHost ? '' : ' disabled') + '>' + esc(a.name) + '</button>'; }).join('');
     var st;
     if (!mine) st = 'You\u2019re watching this match. It starts when all fighters lock in.';
     else if (missing) st = ffa() ? 'Waiting for a 3rd player to join\u2026' + (room.isHost ? ' (or switch to 1 VS 1)' : '') : 'Waiting for your friend\u2026';
@@ -101,11 +103,13 @@
     else st = 'Pick your fighter, then LOCK IN.' + (room.isHost ? ' You choose the arena.' : '');
     showOv('<h2>' + (ffa() ? 'FREE-FOR-ALL: CHOOSE YOUR FIGHTER' : 'CHOOSE YOUR FIGHTER') + '</h2>' + top() + fmt + '<div class="olGrid">' + grid + '</div><div class="olArenas">' + ar + '</div>' +
       '<div class="olStatus" id="olSt">' + st + '</div>' +
-      (mine ? btn('olLock', me.lock ? 'LOCKED \u2713' : 'LOCK IN', me.lock ? 'ok' : (me.f ? '' : 'dim')) : '') + footBtns());
+      (mine ? btn('olLock', me.lock ? 'LOCKED \u2713' : 'LOCK IN', me.lock ? 'ok' : (me.f ? '' : 'dim')) + (me.f && GB.Elite && GB.Elite.owned() ? btn('olSkin', 'SKIN: ' + GB.Elite.skinName(mySkin(me.f)), 'alt') : '') : '') + footBtns() +
+      (GB.Elite && GB.Elite.owned() ? '<div class="olStatus" style="font-size:12px">\u2B50 ' + (GB.Elite.ownedLocal() ? (room.isHost ? 'You\u2019re sharing the Elite Brawler Pack with this room!' : 'Elite Brawler Pack') : 'The host is sharing the Elite Brawler Pack with you!') + '</div>' : ''));
     Array.prototype.forEach.call(document.querySelectorAll('#ol .olCard'), function (b) { b.addEventListener('click', function () { if (!mine) return; GB.Audio.play && GB.Audio.play('select'); pick(b.getAttribute('data-id'), false); }); });
     Array.prototype.forEach.call(document.querySelectorAll('#ol .olAr'), function (b) { b.addEventListener('click', function () { if (!room.isHost) return; room.setMeta({ arena: b.getAttribute('data-ar') }); }); });
     on('olF1', function () { if (room.isHost && ffa()) setFmt('1v1'); });
     on('olF3', function () { if (room.isHost && !ffa() && players().length >= 3) setFmt('ffa'); });
+    on('olSkin', function () { var m3 = (meta.picks || {})[myPid] || {}; if (!m3.f || m3.lock) return; GB.Elite.save.skin[m3.f] = GB.Elite.nextSkin(mySkin(m3.f), 1); GB.persist(); pick(m3.f, false); });
     on('olLock', function () { var m2 = (meta.picks || {})[myPid] || {}; if (!m2.f) { pick(pool()[0].id, false); return; } pick(m2.f, !m2.lock); });
     bindFoot();
   }
@@ -135,12 +139,13 @@
 
   /* ---------- host logic ---------- */
   function sendHost(msg) { if (room.isHost) hostMsg(msg, myPid); else room.send(msg); }
-  function pick(fid, lock) { sendHost({ t: 'pick', f: fid, lock: !!lock }); }
+  function mySkin(fid) { var E = GB.Elite; return E && E.owned() ? (E.save.skin[fid] || '') : ''; }
+  function pick(fid, lock) { sendHost({ t: 'pick', f: fid, lock: !!lock, sk: mySkin(fid) }); }
   function hostMsg(d, from) {
     if (!room.isHost || !d) return;
     var s = sides();
     if (d.t === 'pick' && (meta.phase || 'select') === 'select' && s.indexOf(from) >= 0) {
-      var picks = JSON.parse(JSON.stringify(meta.picks || {})); picks[from] = { f: d.f, lock: !!d.lock && !!d.f }; room.setMeta({ picks: picks }); maybeStart();
+      var picks = JSON.parse(JSON.stringify(meta.picks || {})); picks[from] = { f: d.f, lock: !!d.lock && !!d.f, sk: typeof d.sk === 'string' ? d.sk.slice(0, 12) : '' }; room.setMeta({ picks: picks }); maybeStart();
     } else if (d.t === 'vote' && meta.phase === 'result') {
       var v = JSON.parse(JSON.stringify(meta.votes || {})); v[from] = true; room.setMeta({ votes: v });
       var cs = (cur && cur.sides) || s; if (cs.every(function (pid) { return pid && v[pid] && byPid(pid); })) setTimeout(startFromPicks, 700);
@@ -161,7 +166,8 @@
     if (!s.every(function (pid) { return pid && byPid(pid) && p[pid] && p[pid].f; })) return;
     var mid = (meta.mid || 0) + 1;
     var cfg = { mode: 'online', p1: p[s[0]].f, p2: p[s[1]].f, arena: meta.arena || 'dojo', names: s.map(function (pid) { return byPid(pid).name.toUpperCase(); }), sides: s.slice(), mid: mid };
-    if (s.length > 2) { cfg.p3 = p[s[2]].f; cfg.ffa = true; }
+    cfg.s1 = p[s[0]].sk || ''; cfg.s2 = p[s[1]].sk || '';
+    if (s.length > 2) { cfg.p3 = p[s[2]].f; cfg.s3 = p[s[2]].sk || ''; cfg.ffa = true; }
     // dev/test switch only: shorter rounds (localStorage grokBrawl.roundTime = 10..99 seconds)
     var rt = 0; try { rt = +localStorage.getItem('grokBrawl.roundTime') || 0; } catch (e) {} if (rt >= 10 && rt <= 99) cfg.time = rt;
     room.setMeta({ phase: 'match', mid: mid, votes: {}, result: null, cfg: cfg });
@@ -251,7 +257,7 @@
     room.on('open', function () {
       phase = 'wait'; var hp0 = players().filter(function (p) { return p.host; })[0]; if (hp0) hostName = hp0.name;
       badge = GN.ui.badge(room, { pos: 'bc', label: room.code });
-      if (room.isHost) { var m0 = room.meta() || {}; if (!m0.phase || m0.phase === 'match') room.setMeta({ game: 'brawl', phase: 'select', fmt: m0.fmt || (prm.q && prm.q.get('fmt') === 'ffa' ? 'ffa' : '1v1'), arena: m0.arena || 'dojo', picks: m0.picks || {}, votes: {} }); }
+      if (room.isHost) { var m0 = room.meta() || {}; if (!m0.phase || m0.phase === 'match') room.setMeta({ elite: !!(GB.Elite && GB.Elite.ownedLocal()), game: 'brawl', phase: 'select', fmt: m0.fmt || (prm.q && prm.q.get('fmt') === 'ffa' ? 'ffa' : '1v1'), arena: m0.arena || 'dojo', picks: m0.picks || {}, votes: {} }); }
       meta = room.meta() || {}; render();
     });
     room.on('players', function () {
@@ -267,7 +273,9 @@
       }
       if (phase !== 'fight' && phase !== 'left' && phase !== 'ending' && phase !== 'hostleft') render();
     });
+    if (GB.Elite) GB.Elite.onChange(function () { if (room && room.isHost && room.opened) room.setMeta({ elite: GB.Elite.ownedLocal() }); if (phase === 'select') render(); });
     room.on('meta', function (m) {
+      if (GB.Elite && !room.isHost) GB.Elite.setShared(!!(m && m.elite));
       meta = m || {};
       if (meta.phase === 'match' && meta.cfg && meta.cfg.mid !== startedMid) { startMatch(meta.cfg); return; }
       if (phase !== 'fight' && phase !== 'left' && phase !== 'ending' && phase !== 'hostleft') render();
