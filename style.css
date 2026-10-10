@@ -280,7 +280,7 @@ body.ffa .hbar.p3{display:flex}
 #tCh{background:rgba(10,4,30,.72);border:2px solid #ffe14d;border-radius:12px;padding:3px 10px;font-size:12px;line-height:1.15}
 #tCh b{display:block;font-family:var(--f);font-weight:normal;color:var(--y);font-size:13px}
 #tObjBox{display:flex;align-items:center;gap:8px;margin:0 auto;background:rgba(10,4,30,.72);border:2px solid #3ff0ff;border-radius:12px;padding:3px 12px 3px 6px;font-size:13px;max-width:44vw}
-#tArrow{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#ffe14d;text-shadow:0 0 8px #ff9a1f;transition:transform .08s linear}
+#tArrow{width:30px;height:30px;display:flex;align-items:center;justify-content:center;transition:transform .08s linear;filter:drop-shadow(0 0 4px #ff9a1f)}#tArrow i{width:20px;height:24px;background:#ffe14d;clip-path:polygon(50% 0,100% 100%,50% 72%,0 100%)}
 #tObjBox small{opacity:.8;font-size:11px}
 #tCrest,.tmCr{display:flex;gap:4px;align-items:center}
 #tCrest i,.tmCr i{width:16px;height:16px;transform:rotate(45deg);border:2px solid var(--c);background:rgba(0,0,0,.5);border-radius:3px}
@@ -297,7 +297,7 @@ body.touch #tJoyZone{display:block}
 #tBtns #tTalk.hot{opacity:1;transform:scale(1.08);box-shadow:0 0 18px #ffe14d,0 4px 0 rgba(0,0,0,.45)}
 body:not(.touch) #tBtns button{width:70px;height:70px;font-size:14px}
 #tHint{position:absolute;left:50%;bottom:calc(8px + var(--sb,0px));transform:translateX(-50%);font-size:12px;opacity:.7;white-space:nowrap;pointer-events:none}
-body.touch #tHint{bottom:auto;top:calc(56px + var(--st,0px))}
+#tHint{transition:opacity 1s}
 #tDlg{position:absolute;left:50%;bottom:calc(12px + var(--sb,0px));transform:translateX(-50%);width:min(680px,calc(100vw - 240px));min-height:88px;display:flex;gap:10px;align-items:center;background:rgba(10,4,30,.9);border:3px solid var(--fc,#ffe14d);border-radius:16px;padding:8px 12px;box-shadow:0 0 18px var(--fc,#ffe14d);z-index:3}
 #tDlg.hidden{display:none}
 #tDlg .dp{width:70px;height:70px;border-radius:12px;border:2px solid var(--fc);flex:0 0 auto;object-fit:cover;background:#140a2e}
@@ -325,6 +325,8 @@ body.touch #tHint{bottom:auto;top:calc(56px + var(--st,0px))}
 #tToast{position:fixed;left:50%;top:calc(60px + var(--st,0px));transform:translate(-50%,-20px);background:rgba(10,4,30,.92);border:2px solid #ffe14d;color:#fff;border-radius:12px;padding:8px 14px;font-size:14px;z-index:60;opacity:0;transition:all .25s;pointer-events:none;max-width:90vw;text-align:center}
 #tToast.on{opacity:1;transform:translate(-50%,0)}
 @media (max-height:500px){
+  #cards .card,#acards .card{width:min(56px,6.6vw);height:15vh}
+  #cards .card .cn{font-size:10px}
   .tmC{min-height:0;padding:4px 2px}.tmC img,.tmC .q{width:min(64px,10vw);height:min(64px,10vw)}
   #tBtns button{width:72px;height:72px;font-size:15px}
   #tDlg{min-height:70px;width:min(600px,calc(100vw - 210px))}#tDlg .dp{width:54px;height:54px}#tDlg .dt{font-size:13px}

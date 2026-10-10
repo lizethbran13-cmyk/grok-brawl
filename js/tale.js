@@ -55,11 +55,11 @@
   function glow(c, sz, p, x, y, z) { return E.glowSprite(c, sz, p, x, y, z); }
   var THEMES = {
     docks: { sky: ['#2f6fd0', '#6fb0ff', '#cfe6ff', '#ffd1a1'], fog: ['#cfe2ff', 40, 120], hemi: ['#e8f2ff', '#6a8aa8', 1.0], sun: ['#fff1d6', 0.8], ground: '#3a8ad8', R: 30 },
-    jungle: { sky: ['#5ec4ff', '#9fe2ff', '#d8f6e0', '#fff1c0'], fog: ['#c8ecd0', 30, 95], hemi: ['#fff8e0', '#3a6a3a', 1.0], sun: ['#fff1c8', 0.8], ground: '#5fae4a', R: 30 },
+    jungle: { sky: ['#5ec4ff', '#9fe2ff', '#d8f6e0', '#fff1c0'], fog: ['#c8ecd0', 30, 95], hemi: ['#fff8e0', '#3a6a3a', 0.9], sun: ['#fff1c8', 0.75], ground: '#4f963e', R: 30 },
     crystal: { sky: ['#030208', '#0a0620', '#170c38', '#24104a'], fog: ['#120830', 18, 70], hemi: ['#9a8aff', '#1a0a30', 0.8], sun: ['#bff4ff', 0.55], ground: '#2e2848', R: 28 },
     city: { sky: ['#05021a', '#1b0b4a', '#4a1a8a', '#ff3fd0'], fog: ['#2a0f5a', 30, 95], hemi: ['#b9a6ff', '#3a1060', 0.9], sun: ['#ff9ae8', 0.7], ground: '#2a2638', R: 30 },
     dino: { sky: ['#1a0505', '#4a120a', '#a8381a', '#ffb04a'], fog: ['#5a2a1a', 30, 95], hemi: ['#ffd0a0', '#4a2010', 0.95], sun: ['#ffc080', 0.8], ground: '#5a4a3a', R: 30 },
-    temple: { sky: ['#3a1a6a', '#ff6a8a', '#ffb36a', '#ffe9a8'], fog: ['#ffc8a0', 35, 110], hemi: ['#fff0d0', '#8a5a3a', 1.05], sun: ['#ffe0a0', 0.9], ground: '#e8c890', R: 30 }
+    temple: { sky: ['#3a1a6a', '#ff6a8a', '#ffb36a', '#ffe9a8'], fog: ['#ffc8a0', 35, 110], hemi: ['#ffe8d0', '#7a4a3a', 0.8], sun: ['#ffd090', 0.7], ground: '#c99a62', R: 30 }
   };
   function texGround(theme) {
     return cv(256, 256, function (g, w, h) {
@@ -78,17 +78,19 @@
       for (var k = 0; k < 5; k++) M(cyl(7), lam(k % 2 ? '#8a5a2a' : '#7a4a22'), Math.sin(k * 0.5) * 0.3, k * h / 5 + h / 10, 0, 0.5 - k * 0.04, h / 5 + 0.05, 0.5 - k * 0.04, g);
       for (k = 0; k < 7; k++) { var l = M(box(), lam(k % 2 ? c1 : c2), Math.sin(k / 7 * PI * 2) * 1.3, h, Math.cos(k / 7 * PI * 2) * 1.3, 0.6, 0.08, 3, g); l.rotation.y = k / 7 * PI * 2; l.rotation.x = 0.35; }
     } else if (kind === 'fern') {
-      for (k = 0; k < 6; k++) { var f = M(box(), lam(k % 2 ? c1 : c2), 0, 0.5, 0, 0.4, 0.06, 2.2, g); f.rotation.y = k / 6 * PI * 2; f.rotation.x = -0.5; f.position.x = Math.sin(k / 6 * PI * 2) * 0.8; f.position.z = Math.cos(k / 6 * PI * 2) * 0.8; }
+      M(ball(1), lam(c1), 0, 0.45 * h, 0, 1.6 * h, 1.1 * h, 1.5 * h, g); M(ball(1), lam(c2), 0.55 * h, 0.35 * h, 0.2 * h, 1.1 * h, 0.8 * h, 1.1 * h, g); M(ball(1), lam(c2), -0.5 * h, 0.32 * h, -0.15 * h, 1.0 * h, 0.75 * h, 1.0 * h, g);
+      if (h > 1.2) M(ball(1), lam('#ff4f8a'), 0.2 * h, 0.95 * h, 0.4 * h, 0.22, 0.22, 0.22, g);
     } else {
       M(cyl(7), lam('#7a4a22'), 0, h * 0.25, 0, 0.5, h * 0.5, 0.5, g); M(cone(8), lam(c1), 0, h * 0.62, 0, h * 0.55, h * 0.6, h * 0.55, g); M(cone(8), lam(c2), 0, h * 0.9, 0, h * 0.4, h * 0.45, h * 0.4, g);
     }
-    solid(x, z, kind === 'fern' ? 0 : 0.6); S.sway.push(g); return g;
+    solid(x, z, kind === 'fern' ? 0 : 0.6); return g;
   }
   function crystal(x, z, s, col) {
     var g = new T.Group(); g.position.set(x, 0, z); S.root.add(g); var R = rnd(Math.round(x * 100 + z * 7) + 99);
-    var mat = new T.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: 0.55, flatShading: true });
-    for (var k = 0; k < 5; k++) { var c = new T.Mesh(new T.OctahedronGeometry(0.5, 0), mat); var hh = s * (0.8 + R() * 1.2); c.scale.set(s * 0.35, hh, s * 0.35); c.position.set((R() - 0.5) * s * 0.9, hh * 0.45, (R() - 0.5) * s * 0.9); c.rotation.set((R() - 0.5) * 0.6, R() * PI, (R() - 0.5) * 0.6); g.add(c); }
-    S.pulse.push({ m: mat, s: glow(col, s * 3, S.root, x, s * 0.8, z) }); solid(x, z, s * 0.55); return g;
+    var fresh = !S.cmat[col], mat = S.cmat[col] || (S.cmat[col] = new T.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: 0.55, flatShading: true }));
+    var og = S.octG || (S.octG = new T.OctahedronGeometry(0.5, 0));
+    for (var k = 0; k < 5; k++) { var c = new T.Mesh(og, mat); var hh = s * (0.8 + R() * 1.2); c.scale.set(s * 0.35, hh, s * 0.35); c.position.set((R() - 0.5) * s * 0.9, hh * 0.45, (R() - 0.5) * s * 0.9); c.rotation.set((R() - 0.5) * 0.6, R() * PI, (R() - 0.5) * 0.6); g.add(c); }
+    var gs = glow(col, s * 3, S.root, x, s * 0.8, z); S.pulse.push(fresh ? { m: mat, s: gs } : { s: gs, k: S.pulse.length }); solid(x, z, s * 0.55); return g;
   }
   function building(x, z, w, d, h, col, lit) {
     var wt = cv(64, 128, function (g, W, Hh) { g.fillStyle = '#0d0820'; g.fillRect(0, 0, W, Hh); var R = rnd(Math.round(x * 13 + z)); for (var y = 4; y < Hh; y += 10) for (var xx = 4; xx < W; xx += 10) if (R() < 0.55) { g.fillStyle = lit[(R() * lit.length) | 0]; g.fillRect(xx, y, 5, 6); } });
@@ -102,7 +104,7 @@
 
   function buildWorld(ch) {
     var th = THEMES[ch.id], root = new T.Group(), sc = new T.Scene();
-    S = { ch: ch, scene: sc, root: root, solids: [], pads: [], sway: [], pulse: [], spin: [], shards: [], npcs: [], upd: [], R: th.R, t: 0 };
+    S = { cmat: {}, ch: ch, scene: sc, root: root, solids: [], pads: [], sway: [], pulse: [], spin: [], shards: [], npcs: [], upd: [], R: th.R, t: 0 };
     sc.add(root);
     sc.background = H.skyTex(th.sky, ch.id === 'city' || ch.id === 'crystal' ? 160 : 0); sc.fog = new T.Fog(th.fog[0], th.fog[1], th.fog[2]);
     root.add(H.lights(root, th.hemi[0], th.hemi[1], th.hemi[2], th.sun[0], th.sun[1], -8, 16, 10));
@@ -112,7 +114,7 @@
     function ring(n, r0, r1, fn) { for (var k = 0; k < n; k++) { var aa = R() * PI * 2, rr = r0 + R() * (r1 - r0); fn(Math.cos(aa) * rr, Math.sin(aa) * rr, k); } }
     if (ch.id === 'docks') {
       var sea = new T.Mesh(new T.CircleGeometry(160, 40), new T.MeshLambertMaterial({ color: '#4aa8ff', emissive: '#0a3a7a', transparent: true, opacity: 0.95 })); sea.rotation.x = -PI / 2; sea.position.y = -0.6; root.add(sea); gnd.visible = false;
-      var plank = cv(128, 128, function (g, w, h) { for (var q = 0; q < 4; q++) { g.fillStyle = q % 2 ? '#a8723e' : '#b98245'; g.fillRect(0, q * 32, w, 32); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, q * 32 + 30, w, 2); } });
+      var plank = cv(128, 128, function (g, w, h) { for (var q = 0; q < 4; q++) { g.fillStyle = q % 2 ? '#8e5f34' : '#a06c3c'; g.fillRect(0, q * 32, w, 32); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, q * 32 + 30, w, 2); } });
       plank.wrapS = plank.wrapT = T.RepeatWrapping; plank.repeat.set(10, 10);
       var deck = new T.Mesh(new T.CircleGeometry(th.R + 1, 40), new T.MeshLambertMaterial({ map: plank })); deck.rotation.x = -PI / 2; deck.position.y = 0.01; root.add(deck);
       M(cyl(40), lam('#7a4a22'), 0, -0.35, 0, (th.R + 1) * 2, 0.7, (th.R + 1) * 2, root);
@@ -121,18 +123,18 @@
       H.instanced(ball(1), lam('#ffffff'), cl, root, ['#ffffff', '#f2f6ff', '#ffe8d8']);
       [[-12, -8, 1.2, 1.4], [-10.6, -8.2, 1.0, 1.2], [8, 10, 1.2, 1.4], [14, -12, 1.4, 2.6], [-16, 12, 1.2, 1.2]].forEach(function (p) { pad(p[0], p[1], p[2], p[3], '#b98245'); });
       // landing pad
-      var lp = M(cyl(32), lam('#3a3a4a'), 0, 0.1, -20, 12, 0.2, 12, root); M(cyl(32), basic('#ffe14d'), 0, 0.21, -20, 9, 0.02, 9, root); M(cyl(32), lam('#3a3a4a'), 0, 0.22, -20, 8.2, 0.03, 8.2, root);
+      M(cyl(32), lam('#3a3a4a'), 0, 0.1, -20, 12, 0.2, 12, root); M(cyl(32), basic('#ffe14d'), 0, 0.21, -20, 9, 0.02, 9, root); M(cyl(32), lam('#3a3a4a'), 0, 0.22, -20, 8.2, 0.03, 8.2, root);
       var bigH = H.textTex('E', 128, 128, '#ffe14d'); var hp = new T.Mesh(H.plane(), new T.MeshBasicMaterial({ map: bigH, transparent: true })); hp.rotation.x = -PI / 2; hp.position.set(0, 0.25, -20); hp.scale.set(5, 5, 1); root.add(hp);
       // plane on the pad
       var pl = new T.Group(); pl.position.set(4.5, 0, -22); pl.rotation.y = 0.6; root.add(pl);
       M(cyl(10), lam('#ff8c1a'), 0, 1.2, 0, 1.2, 5, 1.2, pl).rotation.x = PI / 2; M(cone(10), lam('#3fa9ff'), 0, 1.2, 2.9, 1.1, 1, 1.1, pl).rotation.x = PI / 2;
       M(box(), lam('#ffd23f'), 0, 1.3, 0.4, 7, 0.15, 1.2, pl); M(box(), lam('#ffd23f'), 0, 1.6, -2.2, 2.6, 0.12, 0.7, pl); M(box(), lam('#ff8c1a'), 0, 2.2, -2.2, 0.12, 1.2, 0.8, pl);
-      var prop = M(box(), lam('#2a2a2a'), 0, 1.2, 3.45, 2.4, 0.18, 0.06, pl); S.spin.push({ o: prop, ax: 'z', sp: 14 }); solid(4.5, -22, 2.4);
+      var prop = M(box(), lam('#2a2a2a'), 0, 1.2, 3.45, 2.4, 0.18, 0.06, pl); prop.userData.dyn = 1; S.spin.push({ o: prop, ax: 'z', sp: 14 }); solid(4.5, -22, 2.4);
       // airship
-      var as = new T.Group(); as.position.set(-20, 14, -30); root.add(as); M(ball(2), lam('#ff4fd8'), 0, 0, 0, 14, 5, 5, as); M(box(), lam('#7a4a22'), 0, -3.6, 0, 4, 1.2, 2, as);
+      var as = new T.Group(); as.userData.dyn = 1; as.position.set(-20, 14, -30); root.add(as); M(ball(2), lam('#ff4fd8'), 0, 0, 0, 14, 5, 5, as); M(box(), lam('#7a4a22'), 0, -3.6, 0, 4, 1.2, 2, as);
       S.upd.push(function (t) { as.position.x = -20 + Math.sin(t * 0.08) * 14; sea.material.emissiveIntensity = 0.8 + Math.sin(t) * 0.1; });
       // hot air balloons
-      [[18, 8, 12, '#ff4a2e'], [-26, 10, 6, '#ffd23f'], [12, 12, -36, '#2fbf4a']].forEach(function (p, k) { var g = new T.Group(); g.position.set(p[0], p[1], p[2]); root.add(g); M(ball(2), lam(p[3]), 0, 2, 0, 3.4, 3.8, 3.4, g); M(box(), lam('#8a5a2a'), 0, -0.8, 0, 0.9, 0.7, 0.9, g); S.upd.push(function (t) { g.position.y = p[1] + Math.sin(t * 0.6 + k) * 0.6; }); });
+      [[18, 8, 12, '#ff4a2e'], [-26, 10, 6, '#ffd23f'], [12, 12, -36, '#2fbf4a']].forEach(function (p, k) { var g = new T.Group(); g.userData.dyn = 1; g.position.set(p[0], p[1], p[2]); root.add(g); M(ball(2), lam(p[3]), 0, 2, 0, 3.4, 3.8, 3.4, g); M(box(), lam('#8a5a2a'), 0, -0.8, 0, 0.9, 0.7, 0.9, g); S.upd.push(function (t) { g.position.y = p[1] + Math.sin(t * 0.6 + k) * 0.6; }); });
       // crates and barrels
       ring(14, 6, 26, function (x, z, k) { if (Math.abs(x) < 7 && z < -13) return; if (k % 2) { M(box(), lam('#b98245'), x, 0.5, z, 1, 1, 1, root); solid(x, z, 0.75); } else { M(cyl(10), lam('#8a5a2a'), x, 0.55, z, 0.9, 1.1, 0.9, root); solid(x, z, 0.55); } });
       // lighthouse
@@ -162,7 +164,7 @@
       H.instanced(new T.DodecahedronGeometry(0.5, 0), lam('#3a3258'), rocks, root, ['#3a3258', '#2e2848', '#463c66']);
       var st = []; for (i = 0; i < 70; i++) { a = R() * PI * 2; var r2 = R() * th.R; st.push([Math.cos(a) * r2, 16, Math.sin(a) * r2, 1 + R() * 1.4, 3 + R() * 5, 1 + R() * 1.4]); }
       var sg = new T.ConeGeometry(0.5, 1, 6); sg.rotateX(PI); H.instanced(sg, lam('#2e2848'), st, root);
-      var big = crystal(0, -18, 4.5, '#3ff0ff');
+      var big = crystal(0, -18, 4.5, '#3ff0ff'); big.userData.dyn = 1;
       S.upd.push(function (t) { big.rotation.y = t * 0.2; });
       [[-6, 8, 1.2, 1.6], [7, -6, 1.0, 1.2], [8.6, -7.6, 1.0, 2.4], [-14, -10, 1.4, 1.4]].forEach(function (p) { pad(p[0], p[1], p[2], p[3], '#463c66', true); });
       for (i = 0; i < 5; i++) { var pg = new T.Mesh(new T.CircleGeometry(2 + R() * 2, 20), new T.MeshBasicMaterial({ color: COLS[i], transparent: true, opacity: 0.5 })); pg.rotation.x = -PI / 2; a = R() * PI * 2; pg.position.set(Math.cos(a) * (6 + R() * 16), 0.03, Math.sin(a) * (6 + R() * 16)); root.add(pg); }
@@ -174,7 +176,7 @@
       ['GROK', 'BRAWL', 'NEON', 'ELITE'].forEach(function (t2, k) { var sgn = H.sign(t2, 5, 1.4, ['#ff4fd8', '#3ff0ff', '#ffe14d', '#7dff9e'][k], null, root, [-18, 18, -22, 22][k], 8 + k * 2, [-9.9, -11.4, 5, 7][k]); sgn.rotation.y = [0.0, 0, PI / 2, -PI / 2][k]; S.pulse.push({ sgn: sgn }); });
       // plaza + fountain
       M(cyl(24), lam('#3a3550'), 0, 0.05, 0, 14, 0.1, 14, root); var ft = M(cyl(16), lam('#5a5670'), 0, 0.5, 4, 3.4, 1, 3.4, root); solid(0, 4, 1.8); var water = M(cyl(16), basic('#3ff0ff'), 0, 1.02, 4, 2.8, 0.05, 2.8, root);
-      var spray = M(cone(10), H.add('#9ae8ff'), 0, 2.2, 4, 0.8, 2.4, 0.8, root);
+      var spray = M(cone(10), H.add('#9ae8ff'), 0, 2.2, 4, 0.8, 2.4, 0.8, root); spray.userData.dyn = 1;
       S.upd.push(function (t) { spray.scale.y = 2.2 + Math.sin(t * 6) * 0.3; });
       // vending machines + lamps
       [[-8, -6], [-6.8, -6], [8, 8]].forEach(function (p, k) { M(box(), lam(['#e8332a', '#2a8ae8', '#ffd23f'][k]), p[0], 1, p[1], 1.1, 2, 0.9, root); M(box(), basic('#bff4ff'), p[0], 1.3, p[1] + 0.46, 0.8, 0.9, 0.02, root); S.pads.push({ x: p[0], z: p[1], r: 0.6, h: 2, sq: true }); });
@@ -206,14 +208,15 @@
       for (s = 0; s < 4; s++) { M(box(), lam(s % 2 ? '#d8b070' : '#e8c890'), 0, 0.6 + s * 1.2, -20, 18 - s * 3.6, 1.2, 12 - s * 2.4, root); S.pads.push({ x: 0, z: -20, r: 8.6 - s * 1.8, h: 1.2 + s * 1.2, sq: true }); }
       for (s = 0; s < 5; s++) pad(0, -12.6 - s * 0.9, 1.8, 0.45 + s * 0.85, '#e0c080');
       M(box(), lam('#ffd23f'), 0, 5.5, -20, 2.4, 0.4, 2.4, root); var altar = glow('#ffe14d', 6, root, 0, 6.4, -20);
-      for (i = 0; i < 12; i++) { a = i / 12 * PI * 2; x = Math.cos(a) * 18; z = Math.sin(a) * 18 + 2; if (z < -10) continue; M(cyl(10), lam('#f2dca8'), x, 3, z, 1.2, 6, 1.2, root); M(box(), lam('#d8b070'), x, 6.2, z, 1.8, 0.4, 1.8, root); solid(x, z, 0.8); }
+      for (i = 0; i < 12; i++) { a = i / 12 * PI * 2; x = Math.cos(a) * 18; z = Math.sin(a) * 18 + 2; if (z < -10 || (z > 8 && Math.abs(x) < 10)) continue; M(cyl(10), lam('#f2dca8'), x, 3, z, 1.2, 6, 1.2, root); M(box(), lam('#d8b070'), x, 6.2, z, 1.8, 0.4, 1.8, root); solid(x, z, 0.8); }
       ring(12, 14, 30, function (x, z) { tree(x, z, 6 + R() * 3, '#4fae4a', '#6fcf5a', 'palm'); });
       // lanterns floating up
-      var lans = []; for (i = 0; i < 16; i++) { var ln = M(box(), basic(i % 2 ? '#ff9a3d' : '#ffd23f'), (R() - 0.5) * 50, 2 + R() * 14, -10 - R() * 30, 0.5, 0.7, 0.5, root); lans.push(ln); }
+      var lans = []; for (i = 0; i < 16; i++) { var ln = M(box(), basic(i % 2 ? '#ff9a3d' : '#ffd23f'), (R() - 0.5) * 50, 2 + R() * 14, -10 - R() * 30, 0.5, 0.7, 0.5, root); ln.userData.dyn = 1; lans.push(ln); }
       S.upd.push(function (t) { lans.forEach(function (l, k) { l.position.y = 2 + ((t * 0.5 + k * 1.3) % 16); }); altar.material.opacity = 0.6 + Math.sin(t * 2) * 0.3; });
       [[-8, 8, 1.2, 1.4], [10, 6, 1.0, 1.0], [11.2, 7.8, 1.0, 2.0]].forEach(function (p) { pad(p[0], p[1], p[2], p[3], '#e0c080'); });
       S.rivalAt = [0, -20, 4.8]; S.shardAt = [[11.2, 7.8, 2.0], [-8, 8, 1.4], [-18, -6, 0]];
     }
+    bake(root);
     // crest shards (3D spinning stars)
     var starG = (function () { var sh = new T.Shape(); for (var k = 0; k < 10; k++) { var rr = k % 2 ? 0.22 : 0.5, aa = k / 10 * PI * 2 + PI / 2; if (k) sh.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); else sh.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr); } var g = new T.ExtrudeGeometry(sh, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.04, bevelSegments: 1 }); g.center(); return g; })();
     var starM = new T.MeshLambertMaterial({ color: '#ffd23f', emissive: '#ff9a1f', emissiveIntensity: 0.6 });
@@ -236,10 +239,25 @@
     // player
     S.pl = { x: 0, z: 14, y: 0, vy: 0, yaw: PI, rig: Mdl.build(GB.skinned(GB.fighter(Tale.hero), Tale.skin)), moving: 0, ground: 0 };
     sc.add(S.pl.rig.root);
-    S.cam = new T.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 400); S.camYaw = PI; S.camP = new T.Vector3(0, 6, 22);
+    S.cam = new T.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 400); S.camYaw = 0; S.camP = new T.Vector3(0, 6, 22);
     // player marker ring
     S.ring = new T.Mesh(new T.RingGeometry(0.7, 0.85, 28), new T.MeshBasicMaterial({ color: '#ffe14d', transparent: true, opacity: 0.6, side: T.DoubleSide, depthWrite: false })); S.ring.rotation.x = -PI / 2; sc.add(S.ring);
     return S;
+  }
+  // static scenery: every plain mesh sharing a geometry + material becomes one InstancedMesh (few draw calls on phones)
+  function bake(root) {
+    root.updateMatrixWorld(true);
+    var buckets = {}, kill = [];
+    (function walk(o, dyn) {
+      dyn = dyn || !!o.userData.dyn;
+      o.children.forEach(function (c) { walk(c, dyn); });
+      if (dyn || !o.isMesh || o.isInstancedMesh || Array.isArray(o.material) || o.material.map && o.material.map.isCanvasTexture && o.material.transparent) return;
+      var k = o.geometry.uuid + '|' + o.material.uuid; (buckets[k] || (buckets[k] = { g: o.geometry, m: o.material, l: [] })).l.push(o.matrixWorld.clone()); kill.push(o);
+    })(root, false);
+    kill.forEach(function (o) { o.parent.remove(o); });
+    var n = 0;
+    for (var k in buckets) { var b = buckets[k]; if (b.l.length === 1) { var single = new T.Mesh(b.g, b.m); single.matrixAutoUpdate = false; single.matrix.copy(b.l[0]); root.add(single); continue; } var im = new T.InstancedMesh(b.g, b.m, b.l.length); b.l.forEach(function (mtx, i) { im.setMatrixAt(i, mtx); }); im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; root.add(im); n++; }
+    return n;
   }
   function disposeWorld() {
     if (!S) return;
@@ -312,7 +330,7 @@
     });
     S.shards.forEach(function (s) { if (s.got) return; s.star.rotation.y = time * 2.4 + s.k; s.g.position.y = s.y + 1.2 + Math.sin(time * 2.5 + s.k) * 0.18; s.gl.material.opacity = 0.6 + Math.sin(time * 4 + s.k) * 0.25; });
     S.sway.forEach(function (g, i) { g.rotation.z = Math.sin(time * 0.9 + i) * 0.02; });
-    S.pulse.forEach(function (p, i) { if (p.m) { p.m.emissiveIntensity = 0.45 + Math.sin(time * 1.6 + i * 1.3) * 0.25; p.s.material.opacity = 0.35 + Math.sin(time * 1.6 + i * 1.3) * 0.2; } if (p.sgn) p.sgn.material.opacity = Math.sin(time * 3 + i) > -0.7 ? 1 : 0.5, p.sgn.material.transparent = true; });
+    S.pulse.forEach(function (p, i) { if (p.m) p.m.emissiveIntensity = 0.45 + Math.sin(time * 1.6 + i * 1.3) * 0.25; if (p.s) { p.s.material.opacity = 0.35 + Math.sin(time * 1.6 + i * 1.3) * 0.2; } if (p.sgn) p.sgn.material.opacity = Math.sin(time * 3 + i) > -0.7 ? 1 : 0.5, p.sgn.material.transparent = true; });
     S.spin.forEach(function (s) { s.o.rotation[s.ax] = time * s.sp; });
     S.upd.forEach(function (fn) { fn(time); });
     for (var b = bursts.length - 1; b >= 0; b--) { var q = bursts[b]; q.t -= dt; q.vy -= 12 * dt; q.m.position.x += q.vx * dt; q.m.position.y += q.vy * dt; q.m.position.z += q.vz * dt; q.m.rotation.x += dt * 8; if (q.t <= 0) { q.m.parent && q.m.parent.remove(q.m); bursts.splice(b, 1); } }
@@ -367,7 +385,7 @@
   /* ---------- flow ---------- */
   function buildUI() {
     var el = $('tale');
-    el.innerHTML = '<div id="tTop"><button id="tPause" aria-label="Pause">II</button><div id="tCh"></div><div id="tObjBox"><div id="tArrow">\u25B2</div><div><div id="tObj"></div><small id="tDist"></small></div></div><div id="tCrest"></div></div>' +
+    el.innerHTML = '<div id="tTop"><button id="tPause" aria-label="Pause">II</button><div id="tCh"></div><div id="tObjBox"><div id="tArrow"><i></i></div><div><div id="tObj"></div><small id="tDist"></small></div></div><div id="tCrest"></div></div>' +
       '<div id="tJoyZone"><div id="tJoy"><div id="tKnob"></div></div><span>MOVE</span></div>' +
       '<div id="tBtns"><button id="tJump">JUMP</button><button id="tTalk">TALK</button></div>' +
       '<div id="tHint"></div><div id="tDlg" class="hidden"></div>' +
@@ -423,7 +441,8 @@
     Tale.hero = hero; Tale.skin = skin || ''; G.quit(); openMap();
   };
   function play(i) {
-    var ch = CH[i]; Tale.chi = i; Tale.paused = false; Tale.dlg = null;
+    var ch = CH[i]; Tale.chi = i; Tale.paused = false; Tale.dlg = null; $('tMap').classList.add('hidden');
+    var hn = $('tHint'); hn.style.opacity = ''; clearTimeout(Tale._hintT); Tale._hintT = setTimeout(function () { hn.style.opacity = '0'; }, 9000);
     disposeWorld(); buildWorld(ch); showTale(); G.setView('story');
     $('tCh').innerHTML = '<b>CHAPTER ' + (i + 1) + '</b><span>' + ch.name + '</span>'; $('tCrest').innerHTML = crestsHtml();
     A.music(ch.music);
