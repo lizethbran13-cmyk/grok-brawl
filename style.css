@@ -285,15 +285,30 @@ body.ffa .hbar.p3{display:flex}
 #tCrest,.tmCr{display:flex;gap:4px;align-items:center}
 #tCrest i,.tmCr i{width:16px;height:16px;transform:rotate(45deg);border:2px solid var(--c);background:rgba(0,0,0,.5);border-radius:3px}
 #tCrest i.on,.tmCr i.on{background:var(--c);box-shadow:0 0 8px var(--c)}
-#tJoyZone{position:absolute;left:0;bottom:0;width:42vw;height:62vh;display:none}
+#tJoyZone{position:absolute;left:0;bottom:0;width:48vw;height:78vh;display:none}
 body.touch #tJoyZone{display:block}
 #tJoyZone span{position:absolute;left:calc(26px + var(--sl,0px));bottom:calc(14px + var(--sb,0px));font-family:var(--f);font-size:12px;opacity:.5}
-#tJoy{position:absolute;left:calc(30px + var(--sl,0px));bottom:calc(36px + var(--sb,0px));width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.4);background:rgba(20,10,50,.35)}
+#tJoy{position:absolute;left:calc(30px + var(--sl,0px));bottom:calc(36px + var(--sb,0px));width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.55);background:radial-gradient(circle,rgba(63,240,255,.10),rgba(20,10,50,.45));box-shadow:0 0 14px rgba(63,240,255,.35);pointer-events:none}
+#tJoy.on{border-color:#3ff0ff}
 #tJoy.on{bottom:auto}
 #tKnob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.8);box-shadow:0 0 12px #3ff0ff}
-#tBtns{position:absolute;right:calc(14px + var(--sr,0px));bottom:calc(18px + var(--sb,0px));display:flex;gap:12px;align-items:flex-end}
+#tBtns{position:absolute;right:calc(14px + var(--sr,0px));bottom:calc(14px + var(--sb,0px));width:204px;height:196px}
+#tBtns button{position:absolute}
+#tBtns #tJump{right:0;bottom:0;width:96px!important;height:96px!important;font-size:19px!important}
+#tBtns #tDash{right:106px;bottom:4px;width:70px!important;height:70px!important;font-size:14px!important;background:radial-gradient(circle at 35% 30%,#ffb3f0,#c02aa8)}
+#tBtns #tTalk{right:14px;bottom:110px;width:70px!important;height:70px!important;font-size:14px!important}
 #tBtns button{width:84px;height:84px;border-radius:50%;border:3px solid #fff;font-family:var(--f);font-size:17px;background:radial-gradient(circle at 35% 30%,#7df3ff,#2a7ac9);box-shadow:0 4px 0 rgba(0,0,0,.45)}
-#tBtns #tTalk{background:radial-gradient(circle at 35% 30%,#ffe98a,#ff9a1f);color:#1b1030;opacity:.55}
+#tBtns #tTalk{background:radial-gradient(circle at 35% 30%,#ffe98a,#ff9a1f);color:#1b1030;opacity:.7}
+#tBtns button:active{filter:brightness(1.25);transform:scale(.94)}
+#tShards{position:absolute;right:calc(10px + var(--sr,0px));top:calc(58px + var(--st,0px));background:rgba(10,4,30,.78);border:2px solid #ffe14d;border-radius:12px;padding:3px 10px;font-family:var(--f);font-size:16px;color:#ffe14d;pointer-events:none;box-shadow:0 0 10px rgba(255,225,77,.4)}
+#tShards b{font-weight:normal;color:#fff}
+#tShards.done{border-color:#7dff9e;color:#7dff9e}
+#tMark{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;pointer-events:none;will-change:transform;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7))}
+#tMark i{font-style:normal;font-size:26px;animation:tmk 1s ease-in-out infinite}
+#tMark small{font-family:var(--f);font-size:12px;color:#fff;background:rgba(10,4,30,.75);border-radius:8px;padding:0 6px}
+#tMark.edge i{font-size:22px}
+#tMark.boss i{filter:hue-rotate(80deg)}
+@keyframes tmk{50%{transform:translateY(-5px)}}
 #tBtns #tTalk.hot{opacity:1;transform:scale(1.08);box-shadow:0 0 18px #ffe14d,0 4px 0 rgba(0,0,0,.45)}
 body:not(.touch) #tBtns button{width:70px;height:70px;font-size:14px}
 #tHint{position:absolute;left:50%;bottom:calc(8px + var(--sb,0px));transform:translateX(-50%);font-size:12px;opacity:.7;white-space:nowrap;pointer-events:none}
@@ -328,7 +343,6 @@ body:not(.touch) #tBtns button{width:70px;height:70px;font-size:14px}
   #cards .card,#acards .card{width:min(56px,6.6vw);height:15vh}
   #cards .card .cn{font-size:10px}
   .tmC{min-height:0;padding:4px 2px}.tmC img,.tmC .q{width:min(64px,10vw);height:min(64px,10vw)}
-  #tBtns button{width:72px;height:72px;font-size:15px}
   #tDlg{min-height:70px;width:min(600px,calc(100vw - 210px))}#tDlg .dp{width:54px;height:54px}#tDlg .dt{font-size:13px}
   #eliteBox .el{font-size:12px}
 }

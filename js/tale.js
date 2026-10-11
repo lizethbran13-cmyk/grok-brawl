@@ -14,7 +14,7 @@
   var CH = [
     { id: 'docks', name: 'The Sky Docks', rival: 'jett', arena: 'skydocks', music: 0,
       intro: [['', 'A golden invitation floats down from the sky...'], ['', '"THE ELITE TOURNAMENT IS BACK! Win an Elite Crest from each of the 6 champions to earn the legendary ELITE BELT."'], ['volt', 'Whoa, you got one too?! The first champion is JETT. He hangs out at the landing pad on the far end of the docks.'], ['volt', 'Grab the 3 crest shards floating around the docks first. Jett won\u2019t fight anyone without them!']],
-      npcs: [['volt', -5, 6, ['Jett once flew a plane through a rainbow. Upside down. Allegedly.', 'Look up! Some shards are on top of the crates. JUMP to reach them!']], ['blaze', 9, -6, ['These airships run on hot air. Kinda like my fire breath!', 'If you get lost, follow the yellow arrow at the top of the screen.']]],
+      npcs: [['volt', -5, 6, ['Jett once flew a plane through a rainbow. Upside down. Allegedly.', 'Look up! Some shards are on top of the crates. Tap JUMP, then tap it again in the air for a DOUBLE JUMP!']], ['blaze', 9, -6, ['These airships run on hot air. Kinda like my fire breath!', 'If you get lost, follow the yellow arrow at the top of the screen.']]],
       pre: [['jett', 'Ha! A new challenger! You collected all the shards? Nice flying, rookie.'], ['jett', 'But nobody beats the fastest pilot in the sky. Buckle up!']],
       post: [['jett', 'WHOA. You\u2019re faster than a jet stream! Here, the SKY CREST is yours.'], ['jett', 'Next champion is MAYA in the Jungle Ruins. Watch out for her vines!']] },
     { id: 'jungle', name: 'The Jungle Ruins', rival: 'maya', arena: 'jungle', music: 2,
@@ -121,7 +121,7 @@
       for (i = 0; i < 28; i++) { a = i / 28 * PI * 2; M(cyl(6), lam('#7a4a22'), Math.cos(a) * (th.R + 0.6), 0.6, Math.sin(a) * (th.R + 0.6), 0.25, 1.2, 0.25, root); }
       var cl = []; for (i = 0; i < 70; i++) { a = R() * PI * 2; var rr = 50 + R() * 70; cl.push([Math.cos(a) * rr, -2 + R() * 6, Math.sin(a) * rr, 6 + R() * 8, 3 + R() * 3, 6 + R() * 8]); }
       H.instanced(ball(1), lam('#ffffff'), cl, root, ['#ffffff', '#f2f6ff', '#ffe8d8']);
-      [[-12, -8, 1.2, 1.4], [-10.6, -8.2, 1.0, 1.2], [8, 10, 1.2, 1.4], [14, -12, 1.4, 2.6], [-16, 12, 1.2, 1.2]].forEach(function (p) { pad(p[0], p[1], p[2], p[3], '#b98245'); });
+      [[-12, -8, 1.2, 1.4], [-10.6, -8.2, 1.0, 1.2], [8, 10, 1.2, 1.4], [14, -12, 1.4, 2.6], [12.0, -9.9, 1.0, 1.3], [-16, 12, 1.2, 1.2]].forEach(function (p) { pad(p[0], p[1], p[2], p[3], '#b98245'); });
       // landing pad
       M(cyl(32), lam('#3a3a4a'), 0, 0.1, -20, 12, 0.2, 12, root); M(cyl(32), basic('#ffe14d'), 0, 0.21, -20, 9, 0.02, 9, root); M(cyl(32), lam('#3a3a4a'), 0, 0.22, -20, 8.2, 0.03, 8.2, root);
       var bigH = H.textTex('E', 128, 128, '#ffe14d'); var hp = new T.Mesh(H.plane(), new T.MeshBasicMaterial({ map: bigH, transparent: true })); hp.rotation.x = -PI / 2; hp.position.set(0, 0.25, -20); hp.scale.set(5, 5, 1); root.add(hp);
@@ -223,7 +223,10 @@
     S.shardAt.forEach(function (p, k) {
       var g = new T.Group(); g.position.set(p[0], (p[2] || 0) + 1.2, p[1]); sc.add(g);
       var st2 = new T.Mesh(starG, starM); st2.scale.setScalar(1.3); g.add(st2); var gl = glow('#ffe14d', 2.4, g, 0, 0, 0);
-      S.shards.push({ g: g, star: st2, gl: gl, x: p[0], z: p[1], y: (p[2] || 0), got: false, k: k });
+      var beam = new T.Mesh(new T.CylinderGeometry(0.32, 0.55, 26, 14, 1, true), new T.MeshBasicMaterial({ color: '#ffe14d', transparent: true, opacity: 0.32, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+      beam.position.set(p[0], (p[2] || 0) + 13, p[1]); sc.add(beam);
+      var halo = new T.Mesh(new T.RingGeometry(0.9, 1.15, 32), new T.MeshBasicMaterial({ color: '#ffe14d', transparent: true, opacity: 0.7, side: T.DoubleSide, depthWrite: false })); halo.rotation.x = -PI / 2; halo.position.set(p[0], (p[2] || 0) + 0.06, p[1]); sc.add(halo);
+      S.shards.push({ g: g, star: st2, gl: gl, beam: beam, halo: halo, x: p[0], z: p[1], y: (p[2] || 0), got: false, k: k });
     });
     // NPCs + rival (real fighter rigs, same toon models as the fights)
     function npc(id, x, z, y, lines, rival) {
@@ -266,7 +269,7 @@
   }
 
   /* ---------- physics + input ---------- */
-  var tk = { up: false, down: false, left: false, right: false }, tj = { id: null, cx: 0, cy: 0, x: 0, y: 0 }, drag = { id: null, x: 0 }, jumpQ = false, talkQ = false;
+  var tk = { up: false, down: false, left: false, right: false }, tj = { id: null, cx: 0, cy: 0, x: 0, y: 0 }, drag = { id: null, x: 0, y: 0 }, jumpQ = false, talkQ = false, dashQ = false, kPrev = {};
   function groundAt(x, z, y) {
     var g = 0;
     S.pads.forEach(function (p) { var inside = p.sq ? Math.abs(x - p.x) < p.r && Math.abs(z - p.z) < p.r : Math.hypot(x - p.x, z - p.z) < p.r; if (inside && y >= p.h - 0.45) g = Math.max(g, p.h); });
@@ -277,30 +280,51 @@
     return false;
   }
   function step(dt) {
-    var P = S.pl, k = I.keys ? I.keys() : {}, jv = tj.id !== null ? tj : (isTouch ? I.joyVec : { x: 0, y: 0 });
+    var P = S.pl, k = I.keys ? I.keys() : {}, jv = tj.id !== null ? tj : { x: 0, y: 0 };
     var mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0) + (jv.x || 0), my = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) + (jv.y || 0);
     if (Tale._bot) { mx = Tale._bot.x || 0; my = Tale._bot.y || 0; }
-    var mag = Math.min(1, Math.hypot(mx, my));
+    var mag = Math.hypot(mx, my); if (mag > 1) { mx /= mag; my /= mag; mag = 1; }
     if (k.KeyQ) S.camYaw += dt * 2.2; if (k.KeyE) S.camYaw -= dt * 2.2;
-    var def = GB.fighter(Tale.hero), spd = 6.2 + def.stats.speed * 0.45;
-    if (mag > 0.12 && !Tale.dlg) {
-      // screen-relative: up = away from the camera, right = screen right
+    var def = GB.fighter(Tale.hero), spd = 6.8 + def.stats.speed * 0.45, dlg = !!Tale.dlg;
+    P.vx = P.vx || 0; P.vz = P.vz || 0; P.dashT = P.dashT || 0; P.dashCd = Math.max(0, (P.dashCd || 0) - dt);
+    var tvx = 0, tvz = 0, dx = Math.sin(P.yaw), dz = Math.cos(P.yaw);
+    S.camIdle = drag.id !== null ? 0 : (S.camIdle || 0) + dt;
+    if (mag > 0.1 && !dlg) {
+      // screen-relative: up = away from the camera, right = screen right. Analog: a small push walks, a full push runs.
       var fx = -Math.sin(S.camYaw), fz = -Math.cos(S.camYaw), rx = -fz, rz = fx;
-      var dx = (fx * my + rx * mx), dz = (fz * my + rz * mx), dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
-      var nx = P.x + dx * spd * mag * dt, nz = P.z + dz * spd * mag * dt;
-      var ok = function (x, z) { if (Math.hypot(x, z) > S.R - 0.5) return false; if (blocked(x, z, P.y)) return false; for (var i = 0; i < S.solids.length; i++) { var s = S.solids[i]; if (s.r && Math.hypot(x - s.x, z - s.z) < s.r + 0.45) return false; } return true; };
-      if (ok(nx, nz)) { P.x = nx; P.z = nz; } else if (ok(nx, P.z)) P.x = nx; else if (ok(P.x, nz)) P.z = nz;
-      var want = Math.atan2(dx, dz), d = want - P.yaw; while (d > PI) d -= PI * 2; while (d < -PI) d += PI * 2; P.yaw += d * Math.min(1, dt * 12);
-      P.moving = mag;
-      if (!drag.id && !k.KeyQ && !k.KeyE) { var behind = Math.atan2(-dx, -dz) + PI, dd = (P.yaw + PI) - S.camYaw; while (dd > PI) dd -= PI * 2; while (dd < -PI) dd += PI * 2; if (Math.abs(my) > 0.3 || Math.abs(dd) > 0.2) S.camYaw += dd * Math.min(1, dt * 0.9) * (my < -0.3 ? 0 : 1); }
-    } else P.moving = 0;
-    var jump = jumpQ || k.Space || (k.KeyK && !Tale.dlg); jumpQ = false;
-    var gy = groundAt(P.x, P.z, P.y);
-    if (jump && P.y <= gy + 0.01 && !Tale.dlg) { P.vy = 9.2; A.play('jump'); }
+      dx = (fx * my + rx * mx); dz = (fz * my + rz * mx); var dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+      var m2 = 0.32 + 0.68 * Math.min(1, (mag - 0.1) / 0.7);
+      tvx = dx * spd * m2; tvz = dz * spd * m2;
+      var want = Math.atan2(dx, dz), d = want - P.yaw; while (d > PI) d -= PI * 2; while (d < -PI) d += PI * 2; P.yaw += d * Math.min(1, dt * 14);
+      // camera eases in behind you only while you run forward (never while strafing, backing up or dragging the camera)
+      var fwd = Math.max(0, my) / (mag || 1);
+      if (S.camIdle > 0.5 && !k.KeyQ && !k.KeyE && fwd > 0.55) { var dd = (P.yaw + PI) - S.camYaw; while (dd > PI) dd -= PI * 2; while (dd < -PI) dd += PI * 2; S.camYaw += dd * Math.min(1, dt * 1.6 * (fwd - 0.5) * 2); }
+    }
+    var air = P.y > (P.ground || 0) + 0.05, acc = air ? 9 : 18;
+    P.vx += (tvx - P.vx) * Math.min(1, dt * acc); P.vz += (tvz - P.vz) * Math.min(1, dt * acc);
+    // DASH: quick burst in the way you face (works in the air too, it carries you across gaps)
+    if (dashQ && P.dashCd <= 0 && !dlg) { P.dashT = 0.24; P.dashCd = 0.75; P.dvx = dx * 19; P.dvz = dz * 19; P.yaw = Math.atan2(dx, dz); if (air) P.vy = Math.max(P.vy, 2.5); A.play('dash'); puff(P.x, P.y + 0.4, P.z, '#bff4ff'); }
+    dashQ = false;
+    var vx = P.vx, vz = P.vz; if (P.dashT > 0) { P.dashT -= dt; vx = P.dvx; vz = P.dvz; if (P.dashT <= 0) { P.vx = P.dvx * 0.45; P.vz = P.dvz * 0.45; } }
+    var ok = function (x, z) { if (Math.hypot(x, z) > S.R - 0.5) return false; if (blocked(x, z, P.y)) return false; for (var i = 0; i < S.solids.length; i++) { var s = S.solids[i]; if (s.r && Math.hypot(x - s.x, z - s.z) < s.r + 0.45) return false; } return true; };
+    var nx = P.x + vx * dt, nz = P.z + vz * dt;
+    // ledge assist: if you jump at a crate and your feet get close to the top, you pop up onto it
+    if (P.y > (P.ground || 0) + 0.15) S.pads.forEach(function (pd) { var inside = pd.sq ? Math.abs(nx - pd.x) < pd.r + 0.3 && Math.abs(nz - pd.z) < pd.r + 0.3 : Math.hypot(nx - pd.x, nz - pd.z) < pd.r + 0.3; if (inside && P.y < pd.h - 0.45 && pd.h - P.y < 1.15) { P.y = pd.h - 0.44; P.vy = Math.max(P.vy, 1.5); } });
+    if (ok(nx, nz)) { P.x = nx; P.z = nz; } else if (ok(nx, P.z)) { P.x = nx; P.vz *= 0.5; } else if (ok(P.x, nz)) { P.z = nz; P.vx *= 0.5; } else { P.vx *= 0.3; P.vz *= 0.3; }
+    P.moving = Math.min(1.6, Math.hypot(vx, vz) / spd);
+    // JUMP: buffered taps + a little coyote time, then a DOUBLE JUMP in the air
+    if (jumpQ && !dlg) P.jbuf = 0.16; jumpQ = false;
+    var gy = groundAt(P.x, P.z, P.y), onG = P.y <= gy + 0.01 && P.vy <= 0.01;
+    if (onG) { P.coyote = 0.12; P.jumps = 0; } else P.coyote = (P.coyote || 0) - dt;
+    if (P.jbuf > 0) {
+      if (P.coyote > 0) { P.vy = 10.2; P.coyote = 0; P.jumps = 1; P.jbuf = 0; A.play('jump'); }
+      else if ((P.jumps || 0) < 2) { P.vy = 9.4; P.jumps = 2; P.jbuf = 0; A.play('jump'); puff(P.x, P.y + 0.2, P.z, '#ffffff'); P.flip = 1; }
+    }
+    P.jbuf = Math.max(0, (P.jbuf || 0) - dt);
     P.vy -= 24 * dt; P.y += P.vy * dt; if (P.y <= gy) { if (P.vy < -6) A.play('land'); P.y = gy; P.vy = 0; }
     P.ground = gy;
     // shards
-    S.shards.forEach(function (s) { if (s.got) return; if (Math.hypot(P.x - s.x, P.z - s.z) < 1.2 && Math.abs(P.y + 1 - (s.y + 1.2)) < 1.6) { s.got = true; s.g.visible = false; A.play('unlock'); S.got = (S.got || 0) + 1; toast('\u2B50 Crest shard ' + S.got + ' / 3' + (S.got >= 3 ? ' \u00b7 Now find ' + GB.fighter(S.ch.rival).name + '!' : '')); burst(s.x, s.y + 1.2, s.z); } });
+    S.shards.forEach(function (s) { if (s.got) return; if (Math.hypot(P.x - s.x, P.z - s.z) < 1.2 && Math.abs(P.y + 1 - (s.y + 1.2)) < 1.6) { s.got = true; s.g.visible = false; s.beam.visible = false; s.halo.visible = false; A.play('unlock'); S.got = (S.got || 0) + 1; toast('\u2B50 Crest shard ' + S.got + ' / 3' + (S.got >= 3 ? ' \u00b7 Now find ' + GB.fighter(S.ch.rival).name + '!' : '')); burst(s.x, s.y + 1.2, s.z); } });
     // talk
     var near = nearest();
     $('tTalk').classList.toggle('hot', !!near); $('tTalk').textContent = near ? (near.rival ? (S.got >= 3 ? 'FIGHT!' : 'TALK') : 'TALK') : 'TALK';
@@ -309,6 +333,7 @@
   }
   function nearest() { var P = S.pl, best = null, bd = 3.2; S.npcs.forEach(function (n) { var d = Math.hypot(P.x - n.x, P.z - n.z); if (d < bd && Math.abs(P.y - n.y) < 2.2) { bd = d; best = n; } }); return best; }
   var bursts = [];
+  function puff(x, y, z, c) { if (!S) return; for (var i = 0; i < 8; i++) { var m = M(ball(1), H.add ? H.add(c) : basic(c), x, y, z, 0.28, 0.28, 0.28, S.scene); bursts.push({ m: m, vx: Math.cos(i / 8 * PI * 2) * 3, vy: 0.6, vz: Math.sin(i / 8 * PI * 2) * 3, t: 0.35 }); } }
   function burst(x, y, z) { for (var i = 0; i < 14; i++) { var m = M(box(), basic(i % 2 ? '#ffe14d' : '#ffffff'), x, y, z, 0.16, 0.16, 0.16, S.scene); bursts.push({ m: m, vx: (Math.random() - 0.5) * 6, vy: 2 + Math.random() * 5, vz: (Math.random() - 0.5) * 6, t: 0.8 }); } }
 
   /* ---------- frame (called by the game loop while view === 'story') ---------- */
@@ -328,18 +353,18 @@
       Mdl.applyPose(n.rig, talking ? Pz.taunt(0, time) : n.rival ? Pz.idle(0, time + i) : (d < 4 ? Pz.win2(0, time + i) : Pz.idle(0, time + i * 1.7)), 0.15);
       if (n.mk) { n.mk.visible = S.got >= 3 || true; n.mk.rotation.y = time * 2.5; n.mk.position.y = n.y + n.rig.height + 1.1 + Math.sin(time * 3) * 0.12; n.mk.children.forEach(function (c) { c.material.color.set(S.got >= 3 ? '#ffe14d' : '#9aa0b8'); }); }
     });
-    S.shards.forEach(function (s) { if (s.got) return; s.star.rotation.y = time * 2.4 + s.k; s.g.position.y = s.y + 1.2 + Math.sin(time * 2.5 + s.k) * 0.18; s.gl.material.opacity = 0.6 + Math.sin(time * 4 + s.k) * 0.25; });
+    S.shards.forEach(function (s) { if (s.got) return; s.star.rotation.y = time * 2.4 + s.k; s.g.position.y = s.y + 1.2 + Math.sin(time * 2.5 + s.k) * 0.18; s.gl.material.opacity = 0.6 + Math.sin(time * 4 + s.k) * 0.25; s.beam.material.opacity = 0.22 + Math.sin(time * 3 + s.k) * 0.08; s.halo.scale.setScalar(1 + Math.sin(time * 4 + s.k) * 0.12); });
     S.sway.forEach(function (g, i) { g.rotation.z = Math.sin(time * 0.9 + i) * 0.02; });
     S.pulse.forEach(function (p, i) { if (p.m) p.m.emissiveIntensity = 0.45 + Math.sin(time * 1.6 + i * 1.3) * 0.25; if (p.s) { p.s.material.opacity = 0.35 + Math.sin(time * 1.6 + i * 1.3) * 0.2; } if (p.sgn) p.sgn.material.opacity = Math.sin(time * 3 + i) > -0.7 ? 1 : 0.5, p.sgn.material.transparent = true; });
     S.spin.forEach(function (s) { s.o.rotation[s.ax] = time * s.sp; });
     S.upd.forEach(function (fn) { fn(time); });
     for (var b = bursts.length - 1; b >= 0; b--) { var q = bursts[b]; q.t -= dt; q.vy -= 12 * dt; q.m.position.x += q.vx * dt; q.m.position.y += q.vy * dt; q.m.position.z += q.vz * dt; q.m.rotation.x += dt * 8; if (q.t <= 0) { q.m.parent && q.m.parent.remove(q.m); bursts.splice(b, 1); } }
     // camera: third person, pulled toward the talker during dialogue
-    var dist = Tale.dlg ? 6 : 8.2, hgt = Tale.dlg ? 2.6 : 4.2, focus = new T.Vector3(P.x, P.y + 1.5, P.z);
+    S.camH = S.camH == null ? 4.2 : S.camH; var dist = Tale.dlg ? 6 : 8.4, hgt = Tale.dlg ? 2.6 : S.camH, focus = new T.Vector3(P.x, P.y + 1.5, P.z);
     if (Tale.dlg && Tale.dlg.npc) { var n2 = Tale.dlg.npc; focus.set((P.x + n2.x) / 2, (P.y + n2.y) / 2 + 1.6, (P.z + n2.z) / 2); }
     var want = new T.Vector3(focus.x + Math.sin(S.camYaw) * dist, focus.y + hgt, focus.z + Math.cos(S.camYaw) * dist);
     var wr = Math.hypot(want.x, want.z), lim = S.R + 6; if (wr > lim) { want.x *= lim / wr; want.z *= lim / wr; }
-    S.camP.lerp(want, Math.min(1, dt * 4)); S.cam.position.copy(S.camP); S.cam.lookAt(focus);
+    S.camP.lerp(want, Math.min(1, dt * (drag.id !== null ? 12 : 6))); S.cam.position.copy(S.camP); S.cam.lookAt(focus);
     var w = window.innerWidth, h = window.innerHeight; if (S.cam.aspect !== w / h) { S.cam.aspect = w / h; S.cam.updateProjectionMatrix(); }
     S.cam.fov = h > w ? 70 : 55; S.cam.updateProjectionMatrix();
     hud(time);
@@ -350,8 +375,15 @@
     if ((S.got || 0) < 3) { var best = null, bd = 1e9; S.shards.forEach(function (s) { if (s.got) return; var d = Math.hypot(S.pl.x - s.x, S.pl.z - s.z); if (d < bd) { bd = d; best = s; } }); return best ? { x: best.x, z: best.z, txt: 'Find the crest shards (' + (S.got || 0) + '/3)' } : null; }
     return { x: S.rival.x, z: S.rival.z, txt: 'Challenge ' + GB.fighter(S.ch.rival).name + '!' };
   }
+  var _pv = new T.Vector3();
   function hud(time) {
     var o = objective(); if (!o) return;
+    var sc2 = $('tShards'); if (sc2) { var g2 = S.got || 0, key = g2 + '/3'; if (sc2._k !== key) { sc2._k = key; sc2.innerHTML = '\u2B50 <b>' + key + '</b>'; sc2.classList.toggle('done', g2 >= 3); } }
+    var mk = $('tMark'); if (mk) { var oy = (S.got || 0) < 3 ? (function () { var b = null, bd = 1e9; S.shards.forEach(function (s) { if (!s.got) { var d = Math.hypot(S.pl.x - s.x, S.pl.z - s.z); if (d < bd) { bd = d; b = s; } } }); return b ? b.y + 1.9 : 0; })() : S.rival.y + S.rival.rig.height + 1.6;
+      _pv.set(o.x, oy, o.z).project(S.cam); var W = window.innerWidth, Hh = window.innerHeight, behind = _pv.z > 1, sx = (_pv.x * 0.5 + 0.5) * W, sy = (-_pv.y * 0.5 + 0.5) * Hh;
+      if (behind) { sx = W - sx; sy = Hh - 40; } var pad2 = 34, edge = behind || sx < pad2 || sx > W - pad2 || sy < 70 || sy > Hh - pad2; sx = Math.max(pad2, Math.min(W - pad2, sx)); sy = Math.max(70, Math.min(Hh - pad2, sy));
+      mk.style.transform = 'translate(' + sx.toFixed(0) + 'px,' + sy.toFixed(0) + 'px) translate(-50%,-100%)'; mk.classList.toggle('edge', edge); mk.classList.toggle('boss', (S.got || 0) >= 3); mk.style.display = Tale.dlg ? 'none' : '';
+      mk.querySelector('small').textContent = Math.round(Math.hypot(o.x - S.pl.x, o.z - S.pl.z)) + 'm'; }
     $('tObj').textContent = o.txt;
     var a = Math.atan2(o.x - S.pl.x, o.z - S.pl.z), rel = a - (S.camYaw + PI); // 0 = straight ahead on screen
     $('tArrow').style.transform = 'rotate(' + (-rel * 180 / PI) + 'deg)';
@@ -387,19 +419,23 @@
     var el = $('tale');
     el.innerHTML = '<div id="tTop"><button id="tPause" aria-label="Pause">II</button><div id="tCh"></div><div id="tObjBox"><div id="tArrow"><i></i></div><div><div id="tObj"></div><small id="tDist"></small></div></div><div id="tCrest"></div></div>' +
       '<div id="tJoyZone"><div id="tJoy"><div id="tKnob"></div></div><span>MOVE</span></div>' +
-      '<div id="tBtns"><button id="tJump">JUMP</button><button id="tTalk">TALK</button></div>' +
+      '<div id="tBtns"><button id="tDash">DASH</button><button id="tJump">JUMP</button><button id="tTalk">TALK</button></div>' +
+      '<div id="tShards"></div><div id="tMark"><i>\u2B50</i><small></small></div>' +
       '<div id="tHint"></div><div id="tDlg" class="hidden"></div>' +
       '<div id="tMap" class="hidden"></div><div id="tMenu" class="hidden"><div class="tmbox"><div class="ptitle">PAUSED</div><button class="big" id="tmRes">RESUME</button><button class="big alt" id="tmMap">CHAPTER MAP</button><button class="big alt danger" id="tmQuit">QUIT TO MENU</button></div></div>';
-    $('tHint').textContent = isTouch ? 'Joystick: move \u00b7 drag the screen: turn camera' : 'WASD / arrows: move \u00b7 Space: jump \u00b7 J / Enter: talk \u00b7 Q/E or drag: camera \u00b7 Esc: pause';
+    $('tHint').textContent = isTouch ? 'Left thumb: move \u00b7 JUMP twice: double jump \u00b7 DASH: zoom \u00b7 drag the right side: look around' : 'WASD / arrows: move \u00b7 Space: jump (twice = double jump) \u00b7 Shift: dash \u00b7 J / Enter: talk \u00b7 Q/E or drag: camera \u00b7 Esc: pause';
     var z = $('tJoyZone'), joy = $('tJoy'), kn = $('tKnob');
     z.addEventListener('pointerdown', function (e) { e.preventDefault(); if (tj.id !== null) return; tj.id = e.pointerId; tj.cx = e.clientX; tj.cy = e.clientY; var r = z.getBoundingClientRect(); joy.style.left = (e.clientX - r.left - 60) + 'px'; joy.style.top = (e.clientY - r.top - 60) + 'px'; joy.classList.add('on'); try { z.setPointerCapture(e.pointerId); } catch (er) {} });
-    z.addEventListener('pointermove', function (e) { if (e.pointerId !== tj.id) return; var dx = e.clientX - tj.cx, dy = e.clientY - tj.cy, d = Math.hypot(dx, dy), R = 50; if (d > R) { dx *= R / d; dy *= R / d; } tj.x = dx / R; tj.y = -dy / R; kn.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; });
+    z.addEventListener('pointermove', function (e) { if (e.pointerId !== tj.id) return; var dx = e.clientX - tj.cx, dy = e.clientY - tj.cy, d = Math.hypot(dx, dy), R = 46;
+      if (d > R * 1.5) { var k2 = (d - R * 1.5) / d; tj.cx += dx * k2; tj.cy += dy * k2; var r = z.getBoundingClientRect(); joy.style.left = (tj.cx - r.left - 60) + 'px'; joy.style.top = (tj.cy - r.top - 60) + 'px'; dx = e.clientX - tj.cx; dy = e.clientY - tj.cy; d = Math.hypot(dx, dy); }
+      if (d > R) { dx *= R / d; dy *= R / d; } var m = Math.min(1, d / R), dz2 = 0.08, sc3 = m < dz2 ? 0 : (m - dz2) / (1 - dz2) / (m || 1); tj.x = dx / R * sc3; tj.y = -dy / R * sc3; kn.style.transform = 'translate(' + dx.toFixed(0) + 'px,' + dy.toFixed(0) + 'px)'; });
     var up = function (e) { if (e.pointerId !== tj.id) return; tj.id = null; tj.x = tj.y = 0; kn.style.transform = ''; joy.classList.remove('on'); };
     z.addEventListener('pointerup', up); z.addEventListener('pointercancel', up);
-    el.addEventListener('pointerdown', function (e) { if (e.target !== el) return; if (Tale.dlg) { nextDlg(); return; } drag.id = e.pointerId; drag.x = e.clientX; });
-    el.addEventListener('pointermove', function (e) { if (e.pointerId !== drag.id || !S) return; S.camYaw -= (e.clientX - drag.x) * 0.008; drag.x = e.clientX; });
+    el.addEventListener('pointerdown', function (e) { if (e.target !== el) return; if (Tale.dlg) { nextDlg(); return; } drag.id = e.pointerId; drag.x = e.clientX; drag.y = e.clientY; });
+    el.addEventListener('pointermove', function (e) { if (e.pointerId !== drag.id || !S) return; S.camYaw -= (e.clientX - drag.x) * 0.009; S.camH = Math.max(1.4, Math.min(9, (S.camH == null ? 4.2 : S.camH) + (e.clientY - drag.y) * 0.025)); drag.x = e.clientX; drag.y = e.clientY; });
     var dup = function (e) { if (e.pointerId === drag.id) drag.id = null; }; el.addEventListener('pointerup', dup); el.addEventListener('pointercancel', dup);
-    $('tJump').addEventListener('pointerdown', function (e) { e.preventDefault(); jumpQ = true; });
+    $('tJump').addEventListener('pointerdown', function (e) { e.preventDefault(); if (Tale.dlg) { nextDlg(); return; } jumpQ = true; });
+    $('tDash').addEventListener('pointerdown', function (e) { e.preventDefault(); dashQ = true; });
     $('tTalk').addEventListener('pointerdown', function (e) { e.preventDefault(); if (Tale.dlg) nextDlg(); else talkQ = true; });
     $('tDlg').addEventListener('pointerdown', function (e) { e.preventDefault(); nextDlg(); });
     $('tPause').addEventListener('click', function () { pauseTale(true); });
@@ -410,6 +446,7 @@
       if (GB.UI.screen() !== 'tale') return;
       if (e.code === 'Escape' || e.code === 'KeyP') { if (!$('tMap').classList.contains('hidden')) return; pauseTale(!Tale.paused); e.preventDefault(); return; }
       if (Tale.dlg && (e.code === 'Enter' || e.code === 'KeyJ' || e.code === 'Space')) { if (!e.repeat) nextDlg(); Tale._talkLatch = true; e.preventDefault(); }
+      if (!Tale.dlg && !Tale.paused && !e.repeat) { if (e.code === 'Space' || e.code === 'KeyK') jumpQ = true; if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyL') dashQ = true; }
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.code) >= 0) e.preventDefault();
     });
   }
@@ -496,6 +533,9 @@
     state: function () { return S ? { ch: S.ch.id, x: +S.pl.x.toFixed(2), z: +S.pl.z.toFixed(2), y: +S.pl.y.toFixed(2), yaw: +S.pl.yaw.toFixed(2), camYaw: +S.camYaw.toFixed(2), got: S.got || 0, dlg: Tale.dlg ? Tale.dlg.lines[Tale.dlg.i][1] : null, npcs: S.npcs.length, shards: S.shards.map(function (s) { return [s.x, s.z, s.y, s.got]; }), rival: [S.rival.x, S.rival.z, S.rival.y], tris: GB.Game.renderer().info.render.triangles, calls: GB.Game.renderer().info.render.calls } : null; },
     tp: function (x, z, y) { if (!S) return; S.pl.x = x; S.pl.z = z; S.pl.y = y || groundAt(x, z, 99); S.pl.vy = 0; },
     bot: function (v) { Tale._bot = v; },
+    cam: function (yaw) { if (S) { S.camYaw = yaw; S.camIdle = 0; } },
+    ground: function (x, z) { if (!S) return null; var hit = Math.hypot(x, z) > S.R - 0.5 || S.solids.some(function (s) { return s.r && Math.hypot(x - s.x, z - s.z) < s.r + 0.5; }) || S.pads.some(function (p) { return p.sq ? Math.abs(x - p.x) < p.r + 0.4 && Math.abs(z - p.z) < p.r + 0.4 : Math.hypot(x - p.x, z - p.z) < p.r + 0.4; }); return hit ? null : 0; },
+    pads: function () { return S ? S.pads.map(function (p) { return [p.x, p.z, p.r, p.h]; }) : []; },
     skipDlg: function () { var n = 0; while (Tale.dlg && n++ < 20) nextDlg(); },
     talk: function () { var n = nearest(); if (n) talk(n); return !!n; },
     save: function () { return JSON.parse(JSON.stringify(sv)); }
