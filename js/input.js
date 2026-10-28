@@ -18,9 +18,11 @@
   I.MAPS = { single: MAP1, p1: MAP2P_1, p2: MAP2P_2 };
   var GAME_CODES = {}; [MAP1, MAP2P_1, MAP2P_2].forEach(function (m) { for (var k in m) m[k].forEach(function (c) { GAME_CODES[c] = 1; }); });
 
+  var jumpEdgeBreak = 0;
   function fill(ctl, map, withTouch) {
     for (var b in map) { var on = false; for (var i = 0; i < map[b].length; i++) if (keys[map[b][i]]) { on = true; break; } ctl[b] = on || (withTouch ? !!touch[b] : false); }
     if (withTouch && touch.jump) ctl.up = true;
+    if (jumpEdgeBreak > 0) { ctl.up = false; jumpEdgeBreak--; }
   }
   I.read = function (c1, c2) {
     if (I.twoPlayer) { fill(c1, MAP2P_1, true); if (c2) fill(c2, MAP2P_2, false); }
@@ -50,8 +52,12 @@
     if (d > R) { dx *= R / d; dy *= R / d; }
     knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     var nx = dx / R, ny = -dy / R; I.joyVec.x = nx; I.joyVec.y = ny;
-    var wasL = touch.left, wasR = touch.right;
-    touch.left = nx < -0.38; touch.right = nx > 0.38; touch.up = ny > 0.55; touch.down = ny < -0.62;
+    var wasL = touch.left, wasR = touch.right, wasU = joy.wasU;
+    touch.left = nx < -0.36; touch.right = nx > 0.36; touch.down = ny < -0.60;
+    var highU = ny > 0.68 && Math.abs(nx) < 0.72;
+    if (highU && !wasU) { touch.up = true; clearTimeout(joy.upT); joy.upT = setTimeout(function () { touch.up = false; }, 90); }
+    else if (!highU && wasU) { touch.up = false; }
+    joy.wasU = highU;
     // double flick -> dash
     var dir = touch.right ? 1 : touch.left ? -1 : 0;
     if (dir && !(dir > 0 ? wasR : wasL)) {
@@ -76,7 +82,7 @@
     zone.addEventListener('pointerup', up); zone.addEventListener('pointercancel', up); zone.addEventListener('lostpointercapture', up);
     document.querySelectorAll('#touch .tb').forEach(function (b) {
       var name = b.getAttribute('data-b'), ids = {};
-      var on = function (e) { e.preventDefault(); ids[e.pointerId] = 1; touch[name] = true; if (name === 'dash') dashBtnHeld = true; b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (er) {} if (navigator.vibrate && GB.Input.haptics) try { navigator.vibrate(8); } catch (er2) {} };
+      var on = function (e) { e.preventDefault(); if (name === 'jump' && (touch.up || touch.jump)) { jumpEdgeBreak = 1; } ids[e.pointerId] = 1; touch[name] = true; if (name === 'dash') dashBtnHeld = true; b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (er) {} if (navigator.vibrate && GB.Input.haptics) try { navigator.vibrate(8); } catch (er2) {} };
       var off = function (e) { delete ids[e.pointerId]; if (Object.keys(ids).length) return; touch[name] = false; if (name === 'dash') dashBtnHeld = false; b.classList.remove('on'); };
       b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
       b.addEventListener('contextmenu', function (e) { e.preventDefault(); });

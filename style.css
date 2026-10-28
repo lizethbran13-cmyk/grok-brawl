@@ -76,19 +76,19 @@ button{font-family:var(--f);cursor:pointer;touch-action:none;-webkit-tap-highlig
 #joy.active{bottom:auto;border-color:rgba(63,240,255,.95)}
 #joyKnob{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#9ff7ff 40%,#22c3d6);box-shadow:0 0 14px rgba(63,240,255,.9)}
 .joyHint{position:absolute;left:calc(70px + var(--sl));bottom:calc(160px + var(--sb));font-family:var(--f);font-size:13px;color:rgba(255,255,255,.6);pointer-events:none}
-#btns{position:absolute;right:calc(10px + var(--sr));bottom:calc(10px + var(--sb));width:300px;height:250px;pointer-events:none}
-.tb{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.85);font-size:15px;pointer-events:auto;touch-action:none;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);
-  box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 -6px 0 rgba(0,0,0,.25);opacity:.9;padding:0;display:flex;align-items:center;justify-content:center}
+#btns{position:absolute;right:calc(12px + var(--sr));bottom:calc(10px + var(--sb));width:310px;height:242px;pointer-events:none}
+.tb{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.9);font-size:15px;pointer-events:auto;touch-action:none;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.65);
+  box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 -6px 0 rgba(0,0,0,.25);opacity:.94;padding:0;display:flex;align-items:center;justify-content:center}
 .tb.on{transform:scale(.92);filter:brightness(1.35);box-shadow:0 1px 0 rgba(0,0,0,.45),0 0 18px #fff}
-.tb.punch{right:96px;bottom:0;width:88px;height:88px;background:radial-gradient(circle at 40% 35%,#ff8a7a,#e8332a);font-size:16px}
-.tb.kick{right:0;bottom:44px;width:88px;height:88px;background:radial-gradient(circle at 40% 35%,#7ab8ff,#2a5ae8);font-size:16px}
-.tb.block{right:196px;bottom:6px;width:72px;height:72px;background:radial-gradient(circle at 40% 35%,#c9c9d9,#5a5a7a)}
-.tb.jump{right:8px;bottom:142px;width:70px;height:70px;background:radial-gradient(circle at 40% 35%,#8affb0,#1fa860)}
-.tb.special{right:92px;bottom:100px;width:78px;height:78px;background:radial-gradient(circle at 40% 35%,#7a6a9a,#3a2a5a);font-size:13px;opacity:.75}
+.tb.jump{right:2px;bottom:6px;width:86px;height:86px;background:radial-gradient(circle at 40% 35%,#8affb0,#1fa860);border-color:#d8ffe6;box-shadow:0 4px 0 rgba(0,0,0,.45),0 0 16px rgba(40,240,120,.45),inset 0 -6px 0 rgba(0,0,0,.25);font-size:16px}
+.tb.punch{right:98px;bottom:4px;width:86px;height:86px;background:radial-gradient(circle at 40% 35%,#ff8a7a,#e8332a);font-size:16px}
+.tb.kick{right:6px;bottom:100px;width:84px;height:84px;background:radial-gradient(circle at 40% 35%,#7ab8ff,#2a5ae8);font-size:16px}
+.tb.block{right:194px;bottom:6px;width:74px;height:74px;background:radial-gradient(circle at 40% 35%,#c9c9d9,#5a5a7a);font-size:14px}
+.tb.dash{right:96px;bottom:96px;width:72px;height:72px;background:radial-gradient(circle at 40% 35%,#ffb0e8,#c81fa8);font-size:14px}
+.tb.special{right:184px;bottom:88px;width:74px;height:74px;background:radial-gradient(circle at 40% 35%,#7a6a9a,#3a2a5a);font-size:13px;opacity:.8}
 .tb.special.ready{background:radial-gradient(circle at 40% 35%,#9ff7ff,#7d3aff);opacity:1;animation:glow 0.8s infinite alternate;border-color:#9ff7ff}
-.tb.super{right:186px;bottom:92px;width:68px;height:68px;background:radial-gradient(circle at 40% 35%,#6a5a3a,#3a2a1a);font-size:13px;opacity:.6}
+.tb.super{right:142px;bottom:168px;width:68px;height:68px;background:radial-gradient(circle at 40% 35%,#6a5a3a,#3a2a1a);font-size:13px;opacity:.68}
 .tb.super.ready{background:radial-gradient(circle at 40% 35%,#fff27a,#ff8a1f);opacity:1;animation:glowY .5s infinite alternate;border-color:#fff}
-.tb.dash{right:178px;bottom:172px;width:56px;height:56px;background:radial-gradient(circle at 40% 35%,#ffb0e8,#c81fa8);font-size:12px}
 @keyframes glow{from{box-shadow:0 0 8px #9ff7ff}to{box-shadow:0 0 26px #b07aff,0 0 6px #fff}}
 @keyframes glowY{from{box-shadow:0 0 10px #ffe14d}to{box-shadow:0 0 32px #ff8a1f,0 0 8px #fff}}
 body.touch #pauseBtn{width:54px;height:40px;font-size:18px}
